@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 
-const TOTAL_BREATHS = 3
+const TICKS_PER_PHASE = 3
 const TICK_MS = 1000
-const PHASE_DURATION = TICK_MS * TOTAL_BREATHS
+const PHASE_DURATION = TICK_MS * TICKS_PER_PHASE
+
+const BREATH_OPTIONS = [3, 5] as const
 
 export default function HomeScreen() {
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [isSessionComplete, setIsSessionComplete] = useState(false)
   const [completedSessions, setCompletedSessions] = useState(0)
+  const [totalCycles, setTotalCycles] = useState<3 | 5>(3)
   const [cycleCount, setCycleCount] = useState(1)
   const [phaseCount, setPhaseCount] = useState(1)
   const [phase, setPhase] = useState<'Inhale' | 'Exhale'>('Inhale')
@@ -47,7 +50,7 @@ export default function HomeScreen() {
     }
 
     const timer = setTimeout(() => {
-      if (phaseCount < TOTAL_BREATHS) {
+      if (phaseCount < TICKS_PER_PHASE) {
         setPhaseCount((prev) => prev + 1)
         return
       }
@@ -58,7 +61,7 @@ export default function HomeScreen() {
         return
       }
 
-      if (cycleCount < TOTAL_BREATHS) {
+      if (cycleCount < totalCycles) {
         setCycleCount((prev) => prev + 1)
         setPhase('Inhale')
         setPhaseCount(1)
@@ -69,7 +72,7 @@ export default function HomeScreen() {
     }, TICK_MS)
 
     return () => clearTimeout(timer)
-  }, [cycleCount, isSessionActive, phase, phaseCount])
+  }, [cycleCount, isSessionActive, phase, phaseCount, totalCycles])
 
   useEffect(() => {
     if (!isSessionActive) return
@@ -102,7 +105,7 @@ export default function HomeScreen() {
             <Text style={styles.phaseText}>{phase}</Text>
             <Text style={styles.countText}>{phaseCount}</Text>
             <Text style={styles.sessionCountText}>
-              Breath {cycleCount} of {TOTAL_BREATHS}
+              Breath {cycleCount} of {totalCycles}
             </Text>
 
             <View style={styles.actions}>
@@ -138,6 +141,28 @@ export default function HomeScreen() {
             <Text style={styles.subtitle}>
               A tiny pause to come back to yourself
             </Text>
+
+            <View style={styles.selectorRow}>
+              {BREATH_OPTIONS.map((n) => (
+                <Pressable
+                  key={n}
+                  style={[
+                    styles.selectorPill,
+                    totalCycles === n && styles.selectorPillActive,
+                  ]}
+                  onPress={() => setTotalCycles(n)}
+                >
+                  <Text
+                    style={[
+                      styles.selectorPillText,
+                      totalCycles === n && styles.selectorPillTextActive,
+                    ]}
+                  >
+                    {n} breaths
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
             <Pressable style={styles.button} onPress={startSession}>
               <Text style={styles.buttonText}>Start breathing</Text>
@@ -185,6 +210,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.4
+  },
+  selectorRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  selectorPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#E5E0D7',
+  },
+  selectorPillActive: {
+    backgroundColor: '#2E5E4E',
+  },
+  selectorPillText: {
+    color: '#3A4942',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  selectorPillTextActive: {
+    color: '#F8F6F2',
   },
   phaseText: {
     color: '#1F2A24',
