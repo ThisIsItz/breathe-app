@@ -4,9 +4,9 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 
-const TICKS_PER_PHASE = 3
+const INHALE_TICKS = 3
+const EXHALE_TICKS = 5
 const TICK_MS = 1000
-const PHASE_DURATION = TICK_MS * TICKS_PER_PHASE
 
 const BREATH_OPTIONS = [3, 5] as const
 
@@ -87,7 +87,9 @@ export default function HomeScreen() {
     }
 
     const timer = setTimeout(() => {
-      if (phaseCount < TICKS_PER_PHASE) {
+      const phaseTicks = phase === 'Inhale' ? INHALE_TICKS : EXHALE_TICKS
+
+      if (phaseCount < phaseTicks) {
         setPhaseCount((prev) => prev + 1)
         return
       }
@@ -116,7 +118,7 @@ export default function HomeScreen() {
 
     Animated.timing(circleAnim, {
       toValue: phase === 'Inhale' ? 1 : 0,
-      duration: PHASE_DURATION,
+      duration: TICK_MS * (phase === 'Inhale' ? INHALE_TICKS : EXHALE_TICKS),
       useNativeDriver: true
     }).start()
   }, [phase, isSessionActive])
