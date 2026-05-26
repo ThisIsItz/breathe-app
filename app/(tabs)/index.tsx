@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { StatusBar } from 'expo-status-bar'
+import * as Haptics from 'expo-haptics'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -91,6 +92,7 @@ export default function HomeScreen() {
   }
 
   const completeSession = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     resetSession()
     setIsSessionActive(false)
     setCompletedSessions((prev) => prev + 1)
@@ -111,12 +113,14 @@ export default function HomeScreen() {
       }
 
       if (phase === 'Inhale') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
         setPhase('Exhale')
         setPhaseCount(1)
         return
       }
 
       if (cycleCount < totalCycles) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
         setCycleCount((prev) => prev + 1)
         setPhase('Inhale')
         setPhaseCount(1)
