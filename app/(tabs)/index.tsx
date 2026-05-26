@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 
@@ -6,6 +7,9 @@ const TICK_MS = 1000
 const PHASE_DURATION = TICK_MS * TICKS_PER_PHASE
 
 const BREATH_OPTIONS = [3, 5] as const
+
+const STORAGE_KEY_BREATHS = 'anchor:totalCycles'
+const STORAGE_KEY_SESSIONS = 'anchor:completedSessions'
 
 export default function HomeScreen() {
   const [isSessionActive, setIsSessionActive] = useState(false)
@@ -17,6 +21,37 @@ export default function HomeScreen() {
   const [phase, setPhase] = useState<'Inhale' | 'Exhale'>('Inhale')
 
   const circleAnim = useRef(new Animated.Value(0)).current
+  const isLoaded = useRef(false)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [breaths, sessions] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEY_BREATHS),
+          AsyncStorage.getItem(STORAGE_KEY_SESSIONS)
+        ])
+        if (breaths === '3' || breaths === '5')
+          setTotalCycles(breaths === '5' ? 5 : 3)
+        if (sessions !== null) setCompletedSessions(parseInt(sessions, 10))
+      } catch {}
+      isLoaded.current = true
+    }
+    load()
+  }, [])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem(STORAGE_KEY_BREATHS, String(totalCycles)).catch(
+      () => {}
+    )
+  }, [totalCycles])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem(STORAGE_KEY_SESSIONS, String(completedSessions)).catch(
+      () => {}
+    )
+  }, [completedSessions])
 
   const resetSession = () => {
     circleAnim.stopAnimation()
@@ -148,14 +183,14 @@ export default function HomeScreen() {
                   key={n}
                   style={[
                     styles.selectorPill,
-                    totalCycles === n && styles.selectorPillActive,
+                    totalCycles === n && styles.selectorPillActive
                   ]}
                   onPress={() => setTotalCycles(n)}
                 >
                   <Text
                     style={[
                       styles.selectorPillText,
-                      totalCycles === n && styles.selectorPillTextActive,
+                      totalCycles === n && styles.selectorPillTextActive
                     ]}
                   >
                     {n} breaths
@@ -213,24 +248,24 @@ const styles = StyleSheet.create({
   },
   selectorRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 8
   },
   selectorPill: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: '#E5E0D7',
+    backgroundColor: '#E5E0D7'
   },
   selectorPillActive: {
-    backgroundColor: '#2E5E4E',
+    backgroundColor: '#2E5E4E'
   },
   selectorPillText: {
     color: '#3A4942',
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '500'
   },
   selectorPillTextActive: {
-    color: '#F8F6F2',
+    color: '#F8F6F2'
   },
   phaseText: {
     color: '#1F2A24',
