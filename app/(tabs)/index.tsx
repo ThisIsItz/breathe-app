@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 
 const TOTAL_BREATHS = 3
 const TICK_MS = 1000
+const PHASE_DURATION = TICK_MS * TOTAL_BREATHS
 
 export default function HomeScreen() {
   const [isSessionActive, setIsSessionActive] = useState(false)
@@ -10,7 +11,10 @@ export default function HomeScreen() {
   const [phaseCount, setPhaseCount] = useState(1)
   const [phase, setPhase] = useState<'Inhale' | 'Exhale'>('Inhale')
 
+  const circleAnim = useRef(new Animated.Value(0)).current
+
   const startSession = () => {
+    circleAnim.setValue(0)
     setCycleCount(1)
     setPhaseCount(1)
     setPhase('Inhale')
@@ -18,6 +22,8 @@ export default function HomeScreen() {
   }
 
   const cancelSession = () => {
+    circleAnim.stopAnimation()
+    circleAnim.setValue(0)
     setIsSessionActive(false)
     setCycleCount(1)
     setPhaseCount(1)
@@ -54,6 +60,21 @@ export default function HomeScreen() {
     return () => clearTimeout(timer)
   }, [cycleCount, isSessionActive, phase, phaseCount])
 
+  useEffect(() => {
+    if (!isSessionActive) return
+
+    Animated.timing(circleAnim, {
+      toValue: phase === 'Inhale' ? 1 : 0,
+      duration: PHASE_DURATION,
+      useNativeDriver: true
+    }).start()
+  }, [phase, isSessionActive])
+
+  const circleScale = circleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.7]
+  })
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -61,6 +82,12 @@ export default function HomeScreen() {
 
         {isSessionActive ? (
           <>
+            <View style={styles.circleWrapper}>
+              <Animated.View
+                style={[styles.circle, { transform: [{ scale: circleScale }] }]}
+              />
+            </View>
+
             <Text style={styles.phaseText}>{phase}</Text>
             <Text style={styles.countText}>{phaseCount}</Text>
             <Text style={styles.sessionCountText}>
@@ -129,6 +156,19 @@ const styles = StyleSheet.create({
     color: '#55635C',
     fontSize: 17,
     lineHeight: 24
+  },
+  circleWrapper: {
+    width: 160,
+    height: 160,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  circle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#2E5E4E',
+    opacity: 0.25
   },
   actions: {
     marginTop: 8,
