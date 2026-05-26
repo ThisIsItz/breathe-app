@@ -7,27 +7,38 @@ const PHASE_DURATION = TICK_MS * TOTAL_BREATHS
 
 export default function HomeScreen() {
   const [isSessionActive, setIsSessionActive] = useState(false)
+  const [isSessionComplete, setIsSessionComplete] = useState(false)
+  const [completedSessions, setCompletedSessions] = useState(0)
   const [cycleCount, setCycleCount] = useState(1)
   const [phaseCount, setPhaseCount] = useState(1)
   const [phase, setPhase] = useState<'Inhale' | 'Exhale'>('Inhale')
 
   const circleAnim = useRef(new Animated.Value(0)).current
 
-  const startSession = () => {
+  const resetSession = () => {
+    circleAnim.stopAnimation()
     circleAnim.setValue(0)
     setCycleCount(1)
     setPhaseCount(1)
     setPhase('Inhale')
+  }
+
+  const startSession = () => {
+    resetSession()
+    setIsSessionComplete(false)
     setIsSessionActive(true)
   }
 
   const cancelSession = () => {
-    circleAnim.stopAnimation()
-    circleAnim.setValue(0)
+    resetSession()
     setIsSessionActive(false)
-    setCycleCount(1)
-    setPhaseCount(1)
-    setPhase('Inhale')
+  }
+
+  const completeSession = () => {
+    resetSession()
+    setIsSessionActive(false)
+    setCompletedSessions((prev) => prev + 1)
+    setIsSessionComplete(true)
   }
 
   useEffect(() => {
@@ -54,7 +65,7 @@ export default function HomeScreen() {
         return
       }
 
-      cancelSession()
+      completeSession()
     }, TICK_MS)
 
     return () => clearTimeout(timer)
@@ -100,6 +111,28 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           </>
+        ) : isSessionComplete ? (
+          <>
+            <Text style={styles.completionHeading}>Well done.</Text>
+            <Text style={styles.subtitle}>You took a moment for yourself.</Text>
+            <Text style={styles.sessionBadge}>
+              {completedSessions}{' '}
+              {completedSessions === 1 ? 'session' : 'sessions'} today
+            </Text>
+
+            <View style={styles.actions}>
+              <Pressable style={styles.button} onPress={startSession}>
+                <Text style={styles.buttonText}>Do another session</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.cancelButton}
+                onPress={() => setIsSessionComplete(false)}
+              >
+                <Text style={styles.cancelButtonText}>Back home</Text>
+              </Pressable>
+            </View>
+          </>
         ) : (
           <>
             <Text style={styles.subtitle}>
@@ -139,6 +172,19 @@ const styles = StyleSheet.create({
     color: '#55635C',
     fontSize: 17,
     lineHeight: 24
+  },
+  completionHeading: {
+    color: '#1F2A24',
+    fontSize: 36,
+    fontWeight: '700',
+    letterSpacing: -0.6,
+    lineHeight: 42
+  },
+  sessionBadge: {
+    color: '#2E5E4E',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.4
   },
   phaseText: {
     color: '#1F2A24',
