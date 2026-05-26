@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { StatusBar } from 'expo-status-bar'
 import * as Haptics from 'expo-haptics'
 import { useEffect, useRef, useState } from 'react'
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import * as Notifications from 'expo-notifications'
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const TICK_MS = 1000
@@ -15,6 +16,76 @@ const STORAGE_KEY_BREATHS = 'anchor:totalCycles'
 const STORAGE_KEY_SESSIONS = 'anchor:completedSessions'
 const STORAGE_KEY_INHALE = 'anchor:inhaleDuration'
 const STORAGE_KEY_EXHALE = 'anchor:exhaleDuration'
+const STORAGE_KEY_REMINDER = 'anchor:reminderMode'
+const STORAGE_KEY_DAILY_HOUR = 'anchor:dailyHour'
+
+type ReminderMode = 'off' | '1h' | '2h' | '4h' | 'daily'
+
+const REMINDER_OPTIONS: Array<{ value: ReminderMode; label: string }> = [
+  { value: 'off', label: 'Off' },
+  { value: '1h', label: '1h' },
+  { value: '2h', label: '2h' },
+  { value: '4h', label: '4h' },
+  { value: 'daily', label: 'Daily' },
+]
+
+const DAILY_HOUR_OPTIONS = [8, 9, 12, 18, 20]
+const CHANNEL_ID = 'anchor-reminders'
+
+const formatHour = (h: number) =>
+  h === 0 ? '12am' : h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h - 12}pm`
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+})
+
+async function applyReminder(mode: ReminderMode, hour: number): Promise<void> {
+  await Notifications.cancelAllScheduledNotificationsAsync()
+  if (mode === 'off') return
+
+  const { status } = await Notifications.requestPermissionsAsync()
+  if (status !== 'granted') return
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+      name: 'Breathing reminders',
+      importance: Notifications.AndroidImportance.DEFAULT,
+    })
+  }
+
+  const content: Notifications.NotificationContentInput = {
+    title: 'Time to breathe',
+    body: 'Take a moment for yourself.',
+  }
+
+  if (mode === 'daily') {
+    await Notifications.scheduleNotificationAsync({
+      content,
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute: 0,
+        channelId: CHANNEL_ID,
+      },
+    })
+  } else {
+    const seconds = mode === '1h' ? 3600 : mode === '2h' ? 7200 : 14400
+    await Notifications.scheduleNotificationAsync({
+      content,
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        repeats: true,
+        channelId: CHANNEL_ID,
+      },
+    })
+  }
+}
 
 export default function HomeScreen() {
   const [isSessionActive, setIsSessionActive] = useState(false)
@@ -26,6 +97,8 @@ export default function HomeScreen() {
   const [cycleCount, setCycleCount] = useState(1)
   const [phaseCount, setPhaseCount] = useState(1)
   const [phase, setPhase] = useState<'Inhale' | 'Exhale'>('Inhale')
+  const [reminderMode, setReminderMode] = useState<ReminderMode>('off')
+  const [dailyHour, setDailyHour] = useState(9)
 
   const circleAnim = useRef(new Animated.Value(0)).current
   const isLoaded = useRef(false)
@@ -33,11 +106,13 @@ export default function HomeScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [breaths, sessions, inhale, exhale] = await Promise.all([
+        const [breaths, sessions, inhale, exhale, reminder, savedHour] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY_BREATHS),
           AsyncStorage.getItem(STORAGE_KEY_SESSIONS),
           AsyncStorage.getItem(STORAGE_KEY_INHALE),
           AsyncStorage.getItem(STORAGE_KEY_EXHALE),
+          AsyncStorage.getItem(STORAGE_KEY_REMINDER),
+          AsyncStorage.getItem(STORAGE_KEY_DAILY_HOUR),
         ])
         if (breaths === '3' || breaths === '5')
           setTotalCycles(breaths === '5' ? 5 : 3)
@@ -46,6 +121,11 @@ export default function HomeScreen() {
         if (pi === 3 || pi === 4 || pi === 5) setInhaleDuration(pi)
         const pe = exhale ? parseInt(exhale, 10) : null
         if (pe === 4 || pe === 6 || pe === 8) setExhaleDuration(pe)
+        const validModes: ReminderMode[] = ['off', '1h', '2h', '4h', 'daily']
+        if (reminder && validModes.includes(reminder as ReminderMode))
+          setReminderMode(reminder as ReminderMode)
+        const ph = savedHour ? parseInt(savedHour, 10) : null
+        if (ph !== null && DAILY_HOUR_OPTIONS.includes(ph)) setDailyHour(ph)
       } catch {}
       isLoaded.current = true
     }
@@ -71,6 +151,28 @@ export default function HomeScreen() {
     if (!isLoaded.current) return
     AsyncStorage.setItem(STORAGE_KEY_EXHALE, String(exhaleDuration)).catch(() => {})
   }, [exhaleDuration])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem(STORAGE_KEY_REMINDER, reminderMode).catch(() => {})
+  }, [reminderMode])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem(STORAGE_KEY_DAILY_HOUR, String(dailyHour)).catch(() => {})
+  }, [dailyHour])
+
+  const handleReminderChange = (mode: ReminderMode) => {
+    setReminderMode(mode)
+    applyReminder(mode, dailyHour).catch(() => {})
+  }
+
+  const handleDailyHourChange = (hour: number) => {
+    setDailyHour(hour)
+    if (reminderMode === 'daily') {
+      applyReminder('daily', hour).catch(() => {})
+    }
+  }
 
   const resetSession = () => {
     circleAnim.stopAnimation()
@@ -295,6 +397,54 @@ export default function HomeScreen() {
                 ))}
               </View>
             </View>
+
+            <View style={styles.settingsSection}>
+              <Text style={styles.settingsLabel}>Reminder</Text>
+              <View style={styles.selectorRow}>
+                {REMINDER_OPTIONS.map(({ value, label }) => (
+                  <Pressable
+                    key={value}
+                    style={[
+                      styles.reminderPill,
+                      reminderMode === value && styles.reminderPillActive
+                    ]}
+                    onPress={() => handleReminderChange(value)}
+                  >
+                    <Text
+                      style={[
+                        styles.reminderPillText,
+                        reminderMode === value && styles.reminderPillTextActive
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              {reminderMode === 'daily' && (
+                <View style={styles.selectorRow}>
+                  {DAILY_HOUR_OPTIONS.map((h) => (
+                    <Pressable
+                      key={h}
+                      style={[
+                        styles.reminderPill,
+                        dailyHour === h && styles.reminderPillActive
+                      ]}
+                      onPress={() => handleDailyHourChange(h)}
+                    >
+                      <Text
+                        style={[
+                          styles.reminderPillText,
+                          dailyHour === h && styles.reminderPillTextActive
+                        ]}
+                      >
+                        {formatHour(h)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
 
           <Pressable style={styles.button} onPress={startSession}>
@@ -480,5 +630,23 @@ const styles = StyleSheet.create({
   },
   dotInactive: {
     backgroundColor: '#C8C2B8'
+  },
+  reminderPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#E5E0D7',
+    alignItems: 'center'
+  },
+  reminderPillActive: {
+    backgroundColor: '#2E5E4E'
+  },
+  reminderPillText: {
+    color: '#3A4942',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  reminderPillTextActive: {
+    color: '#F8F6F2'
   }
 })
