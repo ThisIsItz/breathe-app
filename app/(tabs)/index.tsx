@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { StatusBar } from 'expo-status-bar'
 
 const TICKS_PER_PHASE = 3
 const TICK_MS = 1000
@@ -125,203 +127,277 @@ export default function HomeScreen() {
   })
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Anchor</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="dark" />
 
-        {isSessionActive ? (
-          <>
-            <View style={styles.circleWrapper}>
-              <Animated.View
-                style={[styles.circle, { transform: [{ scale: circleScale }] }]}
-              />
-            </View>
+      {isSessionActive ? (
+        <View style={styles.sessionContainer}>
+          <Text style={styles.sessionTitle}>Anchor</Text>
 
+          <View style={styles.circleArea}>
+            <Animated.View
+              style={[styles.circle, { transform: [{ scale: circleScale }] }]}
+            />
+          </View>
+
+          <View style={styles.sessionInfo}>
             <Text style={styles.phaseText}>{phase}</Text>
             <Text style={styles.countText}>{phaseCount}</Text>
-            <Text style={styles.sessionCountText}>
-              Breath {cycleCount} of {totalCycles}
-            </Text>
+          </View>
 
-            <View style={styles.actions}>
-              <Pressable style={styles.cancelButton} onPress={cancelSession}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-            </View>
-          </>
-        ) : isSessionComplete ? (
-          <>
+          <View style={styles.progressDots}>
+            {Array.from({ length: totalCycles }, (_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  i + 1 <= cycleCount ? styles.dotActive : styles.dotInactive,
+                ]}
+              />
+            ))}
+          </View>
+
+          <Pressable style={styles.cancelButton} onPress={cancelSession}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </Pressable>
+        </View>
+      ) : isSessionComplete ? (
+        <View style={styles.homeContainer}>
+          <Text style={styles.title}>Anchor</Text>
+
+          <View style={styles.section}>
             <Text style={styles.completionHeading}>Well done.</Text>
-            <Text style={styles.subtitle}>You took a moment for yourself.</Text>
-            <Text style={styles.sessionBadge}>
-              {completedSessions}{' '}
-              {completedSessions === 1 ? 'session' : 'sessions'} today
-            </Text>
+            <Text style={styles.subtitle}>You took a moment{`\n`}for yourself.</Text>
+          </View>
 
-            <View style={styles.actions}>
-              <Pressable style={styles.button} onPress={startSession}>
-                <Text style={styles.buttonText}>Do another session</Text>
-              </Pressable>
+          <Text style={styles.sessionBadge}>
+            {completedSessions}{' '}
+            {completedSessions === 1 ? 'session' : 'sessions'} today
+          </Text>
 
-              <Pressable
-                style={styles.cancelButton}
-                onPress={() => setIsSessionComplete(false)}
-              >
-                <Text style={styles.cancelButtonText}>Back home</Text>
-              </Pressable>
-            </View>
-          </>
-        ) : (
-          <>
-            <Text style={styles.subtitle}>
-              A tiny pause to come back to yourself
-            </Text>
+          <View style={styles.actions}>
+            <Pressable style={styles.button} onPress={startSession}>
+              <Text style={styles.buttonText}>Do another session</Text>
+            </Pressable>
+            <Pressable
+              style={styles.cancelButton}
+              onPress={() => setIsSessionComplete(false)}
+            >
+              <Text style={styles.cancelButtonText}>Back home</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.homeContainer}>
+          <View>
+            <Text style={styles.title}>Anchor</Text>
+            <Text style={styles.subtitle}>A tiny pause to come back{`\n`}to yourself</Text>
+          </View>
 
+          <View style={styles.settingsSection}>
+            <Text style={styles.settingsLabel}>Breaths per session</Text>
             <View style={styles.selectorRow}>
               {BREATH_OPTIONS.map((n) => (
                 <Pressable
                   key={n}
                   style={[
                     styles.selectorPill,
-                    totalCycles === n && styles.selectorPillActive
+                    totalCycles === n && styles.selectorPillActive,
                   ]}
                   onPress={() => setTotalCycles(n)}
                 >
                   <Text
                     style={[
                       styles.selectorPillText,
-                      totalCycles === n && styles.selectorPillTextActive
+                      totalCycles === n && styles.selectorPillTextActive,
                     ]}
                   >
-                    {n} breaths
+                    {n}
                   </Text>
                 </Pressable>
               ))}
             </View>
+          </View>
 
-            <Pressable style={styles.button} onPress={startSession}>
-              <Text style={styles.buttonText}>Start breathing</Text>
-            </Pressable>
-          </>
-        )}
-      </View>
-    </View>
+          <Pressable style={styles.button} onPress={startSession}>
+            <Text style={styles.buttonText}>Start breathing</Text>
+          </Pressable>
+
+          {completedSessions > 0 && (
+            <Text style={styles.sessionBadge}>
+              {completedSessions}{' '}
+              {completedSessions === 1 ? 'session' : 'sessions'} today
+            </Text>
+          )}
+        </View>
+      )}
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#F5F1EA',
-    paddingHorizontal: 24,
-    justifyContent: 'center'
   },
-  content: {
-    gap: 16,
-    alignItems: 'flex-start',
-    maxWidth: 360
+
+  // Home + completion shared layout
+  homeContainer: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingVertical: 48,
+    gap: 36,
+    justifyContent: 'center',
   },
   title: {
     color: '#1F2A24',
-    fontSize: 40,
+    fontSize: 44,
     fontWeight: '700',
-    letterSpacing: -0.8,
-    lineHeight: 46
+    letterSpacing: -1,
+    lineHeight: 50,
+    marginBottom: 8,
   },
   subtitle: {
     color: '#55635C',
     fontSize: 17,
-    lineHeight: 24
+    lineHeight: 26,
+  },
+  section: {
+    gap: 8,
   },
   completionHeading: {
     color: '#1F2A24',
     fontSize: 36,
     fontWeight: '700',
     letterSpacing: -0.6,
-    lineHeight: 42
+    lineHeight: 42,
   },
-  sessionBadge: {
-    color: '#2E5E4E',
-    fontSize: 14,
+  settingsSection: {
+    gap: 12,
+  },
+  settingsLabel: {
+    color: '#9AA49E',
+    fontSize: 12,
     fontWeight: '600',
-    letterSpacing: 0.4
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   selectorRow: {
     flexDirection: 'row',
-    gap: 8
+    gap: 8,
   },
   selectorPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: '#E5E0D7'
+    width: 72,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: '#E5E0D7',
+    alignItems: 'center',
   },
   selectorPillActive: {
-    backgroundColor: '#2E5E4E'
+    backgroundColor: '#2E5E4E',
   },
   selectorPillText: {
     color: '#3A4942',
-    fontSize: 15,
-    fontWeight: '500'
+    fontSize: 20,
+    fontWeight: '600',
   },
   selectorPillTextActive: {
-    color: '#F8F6F2'
+    color: '#F8F6F2',
   },
-  phaseText: {
-    color: '#1F2A24',
-    fontSize: 30,
-    fontWeight: '700',
-    lineHeight: 36
-  },
-  countText: {
-    color: '#55635C',
-    fontSize: 32,
-    fontWeight: '700',
-    lineHeight: 38
-  },
-  sessionCountText: {
-    color: '#55635C',
-    fontSize: 17,
-    lineHeight: 24
-  },
-  circleWrapper: {
-    width: 160,
-    height: 160,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  circle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#2E5E4E',
-    opacity: 0.25
+  sessionBadge: {
+    color: '#9AA49E',
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
   actions: {
-    marginTop: 8,
     gap: 12,
-    width: '100%'
   },
   button: {
     backgroundColor: '#2E5E4E',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 999
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 999,
+    alignItems: 'center',
   },
   buttonText: {
     color: '#F8F6F2',
-    fontSize: 16,
-    fontWeight: '600'
+    fontSize: 17,
+    fontWeight: '600',
   },
   cancelButton: {
     backgroundColor: '#E5E0D7',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 999
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 999,
+    alignItems: 'center',
   },
   cancelButtonText: {
     color: '#3A4942',
-    fontSize: 16,
-    fontWeight: '600'
-  }
+    fontSize: 17,
+    fontWeight: '600',
+  },
+
+  // Session layout
+  sessionContainer: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingBottom: 40,
+    paddingTop: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sessionTitle: {
+    alignSelf: 'flex-start',
+    color: '#1F2A24',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  circleArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circle: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#2E5E4E',
+    opacity: 0.18,
+  },
+  sessionInfo: {
+    alignItems: 'center',
+    gap: 2,
+    marginBottom: 28,
+  },
+  phaseText: {
+    color: '#55635C',
+    fontSize: 18,
+    fontWeight: '500',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  countText: {
+    color: '#1F2A24',
+    fontSize: 64,
+    fontWeight: '700',
+    lineHeight: 72,
+  },
+  progressDots: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 32,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotActive: {
+    backgroundColor: '#2E5E4E',
+  },
+  dotInactive: {
+    backgroundColor: '#C8C2B8',
+  },
 })
