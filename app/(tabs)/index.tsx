@@ -1,23 +1,27 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { StatusBar } from 'expo-status-bar'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { StatusBar } from 'expo-status-bar'
 
-const INHALE_TICKS = 3
-const EXHALE_TICKS = 5
 const TICK_MS = 1000
 
 const BREATH_OPTIONS = [3, 5] as const
+const INHALE_OPTIONS = [3, 4, 5] as const
+const EXHALE_OPTIONS = [4, 6, 8] as const
 
 const STORAGE_KEY_BREATHS = 'anchor:totalCycles'
 const STORAGE_KEY_SESSIONS = 'anchor:completedSessions'
+const STORAGE_KEY_INHALE = 'anchor:inhaleDuration'
+const STORAGE_KEY_EXHALE = 'anchor:exhaleDuration'
 
 export default function HomeScreen() {
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [isSessionComplete, setIsSessionComplete] = useState(false)
   const [completedSessions, setCompletedSessions] = useState(0)
   const [totalCycles, setTotalCycles] = useState<3 | 5>(3)
+  const [inhaleDuration, setInhaleDuration] = useState<3 | 4 | 5>(4)
+  const [exhaleDuration, setExhaleDuration] = useState<4 | 6 | 8>(6)
   const [cycleCount, setCycleCount] = useState(1)
   const [phaseCount, setPhaseCount] = useState(1)
   const [phase, setPhase] = useState<'Inhale' | 'Exhale'>('Inhale')
@@ -28,13 +32,19 @@ export default function HomeScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [breaths, sessions] = await Promise.all([
+        const [breaths, sessions, inhale, exhale] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY_BREATHS),
-          AsyncStorage.getItem(STORAGE_KEY_SESSIONS)
+          AsyncStorage.getItem(STORAGE_KEY_SESSIONS),
+          AsyncStorage.getItem(STORAGE_KEY_INHALE),
+          AsyncStorage.getItem(STORAGE_KEY_EXHALE),
         ])
         if (breaths === '3' || breaths === '5')
           setTotalCycles(breaths === '5' ? 5 : 3)
         if (sessions !== null) setCompletedSessions(parseInt(sessions, 10))
+        const pi = inhale ? parseInt(inhale, 10) : null
+        if (pi === 3 || pi === 4 || pi === 5) setInhaleDuration(pi)
+        const pe = exhale ? parseInt(exhale, 10) : null
+        if (pe === 4 || pe === 6 || pe === 8) setExhaleDuration(pe)
       } catch {}
       isLoaded.current = true
     }
@@ -43,17 +53,23 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!isLoaded.current) return
-    AsyncStorage.setItem(STORAGE_KEY_BREATHS, String(totalCycles)).catch(
-      () => {}
-    )
+    AsyncStorage.setItem(STORAGE_KEY_BREATHS, String(totalCycles)).catch(() => {})
   }, [totalCycles])
 
   useEffect(() => {
     if (!isLoaded.current) return
-    AsyncStorage.setItem(STORAGE_KEY_SESSIONS, String(completedSessions)).catch(
-      () => {}
-    )
+    AsyncStorage.setItem(STORAGE_KEY_SESSIONS, String(completedSessions)).catch(() => {})
   }, [completedSessions])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem(STORAGE_KEY_INHALE, String(inhaleDuration)).catch(() => {})
+  }, [inhaleDuration])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem(STORAGE_KEY_EXHALE, String(exhaleDuration)).catch(() => {})
+  }, [exhaleDuration])
 
   const resetSession = () => {
     circleAnim.stopAnimation()
@@ -87,7 +103,7 @@ export default function HomeScreen() {
     }
 
     const timer = setTimeout(() => {
-      const phaseTicks = phase === 'Inhale' ? INHALE_TICKS : EXHALE_TICKS
+      const phaseTicks = phase === 'Inhale' ? inhaleDuration : exhaleDuration
 
       if (phaseCount < phaseTicks) {
         setPhaseCount((prev) => prev + 1)
@@ -118,7 +134,7 @@ export default function HomeScreen() {
 
     Animated.timing(circleAnim, {
       toValue: phase === 'Inhale' ? 1 : 0,
-      duration: TICK_MS * (phase === 'Inhale' ? INHALE_TICKS : EXHALE_TICKS),
+      duration: TICK_MS * (phase === 'Inhale' ? inhaleDuration : exhaleDuration),
       useNativeDriver: true
     }).start()
   }, [phase, isSessionActive])
@@ -153,7 +169,7 @@ export default function HomeScreen() {
                 key={i}
                 style={[
                   styles.dot,
-                  i + 1 <= cycleCount ? styles.dotActive : styles.dotInactive,
+                  i + 1 <= cycleCount ? styles.dotActive : styles.dotInactive
                 ]}
               />
             ))}
@@ -169,7 +185,9 @@ export default function HomeScreen() {
 
           <View style={styles.section}>
             <Text style={styles.completionHeading}>Well done.</Text>
-            <Text style={styles.subtitle}>You took a moment{`\n`}for yourself.</Text>
+            <Text style={styles.subtitle}>
+              You took a moment{`\n`}for yourself.
+            </Text>
           </View>
 
           <Text style={styles.sessionBadge}>
@@ -193,31 +211,85 @@ export default function HomeScreen() {
         <View style={styles.homeContainer}>
           <View>
             <Text style={styles.title}>Anchor</Text>
-            <Text style={styles.subtitle}>A tiny pause to come back{`\n`}to yourself</Text>
+            <Text style={styles.subtitle}>
+              A tiny pause to come back{`\n`}to yourself
+            </Text>
           </View>
 
-          <View style={styles.settingsSection}>
-            <Text style={styles.settingsLabel}>Breaths per session</Text>
-            <View style={styles.selectorRow}>
-              {BREATH_OPTIONS.map((n) => (
-                <Pressable
-                  key={n}
-                  style={[
-                    styles.selectorPill,
-                    totalCycles === n && styles.selectorPillActive,
-                  ]}
-                  onPress={() => setTotalCycles(n)}
-                >
-                  <Text
+          <View style={styles.settingsGroup}>
+            <View style={styles.settingsSection}>
+              <Text style={styles.settingsLabel}>Breaths per session</Text>
+              <View style={styles.selectorRow}>
+                {BREATH_OPTIONS.map((n) => (
+                  <Pressable
+                    key={n}
                     style={[
-                      styles.selectorPillText,
-                      totalCycles === n && styles.selectorPillTextActive,
+                      styles.selectorPill,
+                      totalCycles === n && styles.selectorPillActive
                     ]}
+                    onPress={() => setTotalCycles(n)}
                   >
-                    {n}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      style={[
+                        styles.selectorPillText,
+                        totalCycles === n && styles.selectorPillTextActive
+                      ]}
+                    >
+                      {n}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.settingsSection}>
+              <Text style={styles.settingsLabel}>Inhale</Text>
+              <View style={styles.selectorRow}>
+                {INHALE_OPTIONS.map((n) => (
+                  <Pressable
+                    key={n}
+                    style={[
+                      styles.selectorPill,
+                      inhaleDuration === n && styles.selectorPillActive
+                    ]}
+                    onPress={() => setInhaleDuration(n)}
+                  >
+                    <Text
+                      style={[
+                        styles.selectorPillText,
+                        inhaleDuration === n && styles.selectorPillTextActive
+                      ]}
+                    >
+                      {n}s
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.settingsSection}>
+              <Text style={styles.settingsLabel}>Exhale</Text>
+              <View style={styles.selectorRow}>
+                {EXHALE_OPTIONS.map((n) => (
+                  <Pressable
+                    key={n}
+                    style={[
+                      styles.selectorPill,
+                      exhaleDuration === n && styles.selectorPillActive
+                    ]}
+                    onPress={() => setExhaleDuration(n)}
+                  >
+                    <Text
+                      style={[
+                        styles.selectorPillText,
+                        exhaleDuration === n && styles.selectorPillTextActive
+                      ]}
+                    >
+                      {n}s
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
           </View>
 
@@ -240,7 +312,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F5F1EA',
+    backgroundColor: '#F5F1EA'
   },
 
   // Home + completion shared layout
@@ -249,7 +321,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 48,
     gap: 36,
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   title: {
     color: '#1F2A24',
@@ -257,87 +329,90 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -1,
     lineHeight: 50,
-    marginBottom: 8,
+    marginBottom: 8
   },
   subtitle: {
     color: '#55635C',
     fontSize: 17,
-    lineHeight: 26,
+    lineHeight: 26
   },
   section: {
-    gap: 8,
+    gap: 8
   },
   completionHeading: {
     color: '#1F2A24',
     fontSize: 36,
     fontWeight: '700',
     letterSpacing: -0.6,
-    lineHeight: 42,
+    lineHeight: 42
   },
   settingsSection: {
-    gap: 12,
+    gap: 12
+  },
+  settingsGroup: {
+    gap: 24
   },
   settingsLabel: {
     color: '#9AA49E',
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    textTransform: 'uppercase'
   },
   selectorRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 8
   },
   selectorPill: {
     width: 72,
     paddingVertical: 14,
     borderRadius: 16,
     backgroundColor: '#E5E0D7',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   selectorPillActive: {
-    backgroundColor: '#2E5E4E',
+    backgroundColor: '#2E5E4E'
   },
   selectorPillText: {
     color: '#3A4942',
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '600'
   },
   selectorPillTextActive: {
-    color: '#F8F6F2',
+    color: '#F8F6F2'
   },
   sessionBadge: {
     color: '#9AA49E',
     fontSize: 13,
     fontWeight: '500',
-    letterSpacing: 0.3,
+    letterSpacing: 0.3
   },
   actions: {
-    gap: 12,
+    gap: 12
   },
   button: {
     backgroundColor: '#2E5E4E',
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderRadius: 999,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   buttonText: {
     color: '#F8F6F2',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '600'
   },
   cancelButton: {
     backgroundColor: '#E5E0D7',
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderRadius: 999,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   cancelButtonText: {
     color: '#3A4942',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '600'
   },
 
   // Session layout
@@ -347,59 +422,59 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     paddingTop: 16,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
   sessionTitle: {
     alignSelf: 'flex-start',
     color: '#1F2A24',
     fontSize: 18,
     fontWeight: '700',
-    letterSpacing: -0.3,
+    letterSpacing: -0.3
   },
   circleArea: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   circle: {
     width: 200,
     height: 200,
     borderRadius: 100,
     backgroundColor: '#2E5E4E',
-    opacity: 0.18,
+    opacity: 0.18
   },
   sessionInfo: {
     alignItems: 'center',
     gap: 2,
-    marginBottom: 28,
+    marginBottom: 28
   },
   phaseText: {
     color: '#55635C',
     fontSize: 18,
     fontWeight: '500',
     letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    textTransform: 'uppercase'
   },
   countText: {
     color: '#1F2A24',
     fontSize: 64,
     fontWeight: '700',
-    lineHeight: 72,
+    lineHeight: 72
   },
   progressDots: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 32,
+    marginBottom: 32
   },
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: 4
   },
   dotActive: {
-    backgroundColor: '#2E5E4E',
+    backgroundColor: '#2E5E4E'
   },
   dotInactive: {
-    backgroundColor: '#C8C2B8',
-  },
+    backgroundColor: '#C8C2B8'
+  }
 })
