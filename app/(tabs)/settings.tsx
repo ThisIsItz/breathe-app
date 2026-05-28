@@ -45,10 +45,33 @@ const formatTime = (h: number, m: number) => {
   return `${displayH}:${m.toString().padStart(2, '0')} ${period}`
 }
 
+function isInQuietHours(
+  h: number,
+  m: number,
+  quietEnabled: boolean,
+  quietStartHour: number,
+  quietStartMinute: number,
+  quietEndHour: number,
+  quietEndMinute: number
+): boolean {
+  if (!quietEnabled) return false
+  const t = h * 60 + m
+  const qStart = quietStartHour * 60 + quietStartMinute
+  const qEnd = quietEndHour * 60 + quietEndMinute
+  if (qStart === qEnd) return false
+  if (qStart < qEnd) return t >= qStart && t < qEnd
+  return t >= qStart || t < qEnd
+}
+
 async function applyReminder(
   mode: ReminderMode,
   hour: number,
-  minute: number
+  minute: number,
+  quietEnabled: boolean,
+  quietStartHour: number,
+  quietStartMinute: number,
+  quietEndHour: number,
+  quietEndMinute: number
 ): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync()
   if (mode === 'off') return
@@ -69,16 +92,31 @@ async function applyReminder(
   }
 
   if (mode === 'daily') {
-    await Notifications.scheduleNotificationAsync({
-      content,
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+    if (
+      !isInQuietHours(
         hour,
-        minute: 0,
-        channelId: CHANNEL_ID
-      }
-    })
-  } else {
+        minute,
+        quietEnabled,
+        quietStartHour,
+        quietStartMinute,
+        quietEndHour,
+        quietEndMinute
+      )
+    ) {
+      await Notifications.scheduleNotificationAsync({
+        content,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute: 0,
+          channelId: CHANNEL_ID
+        }
+      })
+    }
+    return
+  }
+
+  if (!quietEnabled) {
     const seconds = mode === '1h' ? 3600 : mode === '2h' ? 7200 : 14400
     await Notifications.scheduleNotificationAsync({
       content,
@@ -89,7 +127,48 @@ async function applyReminder(
         channelId: CHANNEL_ID
       }
     })
+    return
   }
+
+  const intervalHours = mode === '1h' ? 1 : mode === '2h' ? 2 : 4
+  const now = new Date()
+  const scheduled: Promise<string>[] = []
+  for (let day = 0; day < 8 && scheduled.length < 60; day++) {
+    for (let h = 0; h < 24 && scheduled.length < 60; h += intervalHours) {
+      if (
+        isInQuietHours(
+          h,
+          0,
+          quietEnabled,
+          quietStartHour,
+          quietStartMinute,
+          quietEndHour,
+          quietEndMinute
+        )
+      )
+        continue
+      const trigger = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + day,
+        h,
+        0,
+        0
+      )
+      if (trigger.getTime() <= now.getTime()) continue
+      scheduled.push(
+        Notifications.scheduleNotificationAsync({
+          content,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: trigger,
+            channelId: CHANNEL_ID
+          }
+        })
+      )
+    }
+  }
+  await Promise.all(scheduled)
 }
 
 type SelectOption = { label: string; value: number }
@@ -116,7 +195,7 @@ function PickerSelector({
     <>
       <Pressable style={styles.selectorField} onPress={() => setVisible(true)}>
         <Text style={styles.selectorValue}>{currentLabel}</Text>
-        <Text style={styles.selectorChevron}>{'\u25be'}</Text>
+        <Text style={styles.selectorChevron}>{'\u203a'}</Text>
       </Pressable>
 
       <Modal
@@ -182,6 +261,13 @@ export default function SettingsScreen() {
   const [dailyHour, setDailyHour] = useState(9)
   const [dailyMinute, setDailyMinute] = useState(0)
   const [showTimePicker, setShowTimePicker] = useState(false)
+  const [quietEnabled, setQuietEnabled] = useState(false)
+  const [quietStartHour, setQuietStartHour] = useState(22)
+  const [quietStartMinute, setQuietStartMinute] = useState(0)
+  const [quietEndHour, setQuietEndHour] = useState(8)
+  const [quietEndMinute, setQuietEndMinute] = useState(0)
+  const [showQuietStartPicker, setShowQuietStartPicker] = useState(false)
+  const [showQuietEndPicker, setShowQuietEndPicker] = useState(false)
 
   const isLoaded = useRef(false)
   const savedOpacityAnim = useRef(new Animated.Value(0)).current
@@ -197,7 +283,12 @@ export default function SettingsScreen() {
           haptics,
           reminder,
           savedHour,
-          savedMinute
+          savedMinute,
+          qEnabled,
+          qStartH,
+          qStartM,
+          qEndH,
+          qEndM
         ] = await Promise.all([
           AsyncStorage.getItem('anchor:totalCycles'),
           AsyncStorage.getItem('anchor:inhaleDuration'),
@@ -205,7 +296,12 @@ export default function SettingsScreen() {
           AsyncStorage.getItem('anchor:haptics'),
           AsyncStorage.getItem('anchor:reminderMode'),
           AsyncStorage.getItem('anchor:dailyHour'),
-          AsyncStorage.getItem('anchor:dailyMinute')
+          AsyncStorage.getItem('anchor:dailyMinute'),
+          AsyncStorage.getItem('anchor:quietEnabled'),
+          AsyncStorage.getItem('anchor:quietStartHour'),
+          AsyncStorage.getItem('anchor:quietStartMinute'),
+          AsyncStorage.getItem('anchor:quietEndHour'),
+          AsyncStorage.getItem('anchor:quietEndMinute')
         ])
         const pb = breaths ? parseInt(breaths, 10) : null
         if (pb !== null && pb >= 1 && pb <= 20) setTotalCycles(pb)
@@ -221,6 +317,15 @@ export default function SettingsScreen() {
         if (ph !== null && ph >= 0 && ph <= 23) setDailyHour(ph)
         const pm = savedMinute ? parseInt(savedMinute, 10) : null
         if (pm !== null && pm >= 0 && pm <= 59) setDailyMinute(pm)
+        if (qEnabled === 'true') setQuietEnabled(true)
+        const pqsh = qStartH ? parseInt(qStartH, 10) : null
+        if (pqsh !== null && pqsh >= 0 && pqsh <= 23) setQuietStartHour(pqsh)
+        const pqsm = qStartM ? parseInt(qStartM, 10) : null
+        if (pqsm !== null && pqsm >= 0 && pqsm <= 59) setQuietStartMinute(pqsm)
+        const pqeh = qEndH ? parseInt(qEndH, 10) : null
+        if (pqeh !== null && pqeh >= 0 && pqeh <= 23) setQuietEndHour(pqeh)
+        const pqem = qEndM ? parseInt(qEndM, 10) : null
+        if (pqem !== null && pqem >= 0 && pqem <= 59) setQuietEndMinute(pqem)
       } catch {}
       isLoaded.current = true
     }
@@ -272,6 +377,42 @@ export default function SettingsScreen() {
     )
   }, [dailyMinute])
 
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem('anchor:quietEnabled', String(quietEnabled)).catch(
+      () => {}
+    )
+  }, [quietEnabled])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem('anchor:quietStartHour', String(quietStartHour)).catch(
+      () => {}
+    )
+  }, [quietStartHour])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem(
+      'anchor:quietStartMinute',
+      String(quietStartMinute)
+    ).catch(() => {})
+  }, [quietStartMinute])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem('anchor:quietEndHour', String(quietEndHour)).catch(
+      () => {}
+    )
+  }, [quietEndHour])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem('anchor:quietEndMinute', String(quietEndMinute)).catch(
+      () => {}
+    )
+  }, [quietEndMinute])
+
   const flashSaved = useCallback(() => {
     if (savedTimer.current) clearTimeout(savedTimer.current)
     Animated.timing(savedOpacityAnim, {
@@ -299,12 +440,26 @@ export default function SettingsScreen() {
     reminderMode,
     dailyHour,
     dailyMinute,
+    quietEnabled,
+    quietStartHour,
+    quietStartMinute,
+    quietEndHour,
+    quietEndMinute,
     flashSaved
   ])
 
   const handleReminderChange = (mode: ReminderMode) => {
     setReminderMode(mode)
-    applyReminder(mode, dailyHour, dailyMinute).catch(() => {})
+    applyReminder(
+      mode,
+      dailyHour,
+      dailyMinute,
+      quietEnabled,
+      quietStartHour,
+      quietStartMinute,
+      quietEndHour,
+      quietEndMinute
+    ).catch(() => {})
   }
 
   const handleTimeChange = (
@@ -318,7 +473,80 @@ export default function SettingsScreen() {
     setDailyHour(h)
     setDailyMinute(m)
     if (reminderMode === 'daily') {
-      applyReminder('daily', h, m).catch(() => {})
+      applyReminder(
+        'daily',
+        h,
+        m,
+        quietEnabled,
+        quietStartHour,
+        quietStartMinute,
+        quietEndHour,
+        quietEndMinute
+      ).catch(() => {})
+    }
+  }
+
+  const handleQuietEnabledChange = (enabled: boolean) => {
+    setQuietEnabled(enabled)
+    if (reminderMode !== 'off') {
+      applyReminder(
+        reminderMode,
+        dailyHour,
+        dailyMinute,
+        enabled,
+        quietStartHour,
+        quietStartMinute,
+        quietEndHour,
+        quietEndMinute
+      ).catch(() => {})
+    }
+  }
+
+  const handleQuietStartChange = (
+    _event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === 'android') setShowQuietStartPicker(false)
+    if (!selectedDate) return
+    const h = selectedDate.getHours()
+    const m = selectedDate.getMinutes()
+    setQuietStartHour(h)
+    setQuietStartMinute(m)
+    if (reminderMode !== 'off') {
+      applyReminder(
+        reminderMode,
+        dailyHour,
+        dailyMinute,
+        quietEnabled,
+        h,
+        m,
+        quietEndHour,
+        quietEndMinute
+      ).catch(() => {})
+    }
+  }
+
+  const handleQuietEndChange = (
+    _event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === 'android') setShowQuietEndPicker(false)
+    if (!selectedDate) return
+    const h = selectedDate.getHours()
+    const m = selectedDate.getMinutes()
+    setQuietEndHour(h)
+    setQuietEndMinute(m)
+    if (reminderMode !== 'off') {
+      applyReminder(
+        reminderMode,
+        dailyHour,
+        dailyMinute,
+        quietEnabled,
+        quietStartHour,
+        quietStartMinute,
+        h,
+        m
+      ).catch(() => {})
     }
   }
 
@@ -477,7 +705,7 @@ export default function SettingsScreen() {
                     <Text style={styles.timeDisplayText}>
                       {formatTime(dailyHour, dailyMinute)}
                     </Text>
-                    <Text style={styles.timeDisplayHint}>tap to change</Text>
+                    <Text style={styles.timeDisplayHint}>{'›'}</Text>
                   </Pressable>
                   {showTimePicker && (
                     <DateTimePicker
@@ -490,6 +718,156 @@ export default function SettingsScreen() {
                 </>
               )}
             </SettingRow>
+
+            {(['1h', '2h', '4h'] as ReminderMode[]).includes(reminderMode) && (
+              <>
+                <SettingRow label="Quiet hours">
+                  <View style={styles.row}>
+                    {([false, true] as const).map((value) => (
+                      <Pressable
+                        key={String(value)}
+                        style={[
+                          styles.tagPill,
+                          quietEnabled === value && styles.pillActive
+                        ]}
+                        onPress={() => handleQuietEnabledChange(value)}
+                      >
+                        <Text
+                          style={[
+                            styles.tagPillText,
+                            quietEnabled === value && styles.pillTextActive
+                          ]}
+                        >
+                          {value ? 'On' : 'Off'}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </SettingRow>
+
+                {quietEnabled && (
+                  <>
+                    <View style={styles.quietTimeRow}>
+                      <View style={styles.quietTimeItem}>
+                        <Text style={styles.paceLabel}>Start</Text>
+                        {Platform.OS === 'ios' ? (
+                          <View
+                            style={[
+                              styles.pickerWrapper,
+                              styles.pickerWrapperIos
+                            ]}
+                          >
+                            <DateTimePicker
+                              value={
+                                new Date(
+                                  2000,
+                                  0,
+                                  1,
+                                  quietStartHour,
+                                  quietStartMinute,
+                                  0
+                                )
+                              }
+                              mode="time"
+                              display="spinner"
+                              onChange={handleQuietStartChange}
+                            />
+                          </View>
+                        ) : (
+                          <>
+                            <Pressable
+                              style={styles.timeDisplay}
+                              onPress={() => setShowQuietStartPicker(true)}
+                            >
+                              <Text style={styles.timeDisplayText}>
+                                {formatTime(quietStartHour, quietStartMinute)}
+                              </Text>
+                              <Text style={styles.timeDisplayHint}>{'›'}</Text>
+                            </Pressable>
+                            {showQuietStartPicker && (
+                              <DateTimePicker
+                                value={
+                                  new Date(
+                                    2000,
+                                    0,
+                                    1,
+                                    quietStartHour,
+                                    quietStartMinute,
+                                    0
+                                  )
+                                }
+                                mode="time"
+                                display="default"
+                                onChange={handleQuietStartChange}
+                              />
+                            )}
+                          </>
+                        )}
+                      </View>
+                      <View style={styles.quietTimeItem}>
+                        <Text style={styles.paceLabel}>End</Text>
+                        {Platform.OS === 'ios' ? (
+                          <View
+                            style={[
+                              styles.pickerWrapper,
+                              styles.pickerWrapperIos
+                            ]}
+                          >
+                            <DateTimePicker
+                              value={
+                                new Date(
+                                  2000,
+                                  0,
+                                  1,
+                                  quietEndHour,
+                                  quietEndMinute,
+                                  0
+                                )
+                              }
+                              mode="time"
+                              display="spinner"
+                              onChange={handleQuietEndChange}
+                            />
+                          </View>
+                        ) : (
+                          <>
+                            <Pressable
+                              style={styles.timeDisplay}
+                              onPress={() => setShowQuietEndPicker(true)}
+                            >
+                              <Text style={styles.timeDisplayText}>
+                                {formatTime(quietEndHour, quietEndMinute)}
+                              </Text>
+                              <Text style={styles.timeDisplayHint}>{'›'}</Text>
+                            </Pressable>
+                            {showQuietEndPicker && (
+                              <DateTimePicker
+                                value={
+                                  new Date(
+                                    2000,
+                                    0,
+                                    1,
+                                    quietEndHour,
+                                    quietEndMinute,
+                                    0
+                                  )
+                                }
+                                mode="time"
+                                display="default"
+                                onChange={handleQuietEndChange}
+                              />
+                            )}
+                          </>
+                        )}
+                      </View>
+                    </View>
+                    <Text style={styles.quietHint}>
+                      No reminders will be sent during this time.
+                    </Text>
+                  </>
+                )}
+              </>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -644,7 +1022,7 @@ const styles = StyleSheet.create({
   },
   timeDisplayHint: {
     color: '#9AA49E',
-    fontSize: 13
+    fontSize: 20
   },
   paceRow: {
     flexDirection: 'row',
@@ -685,7 +1063,8 @@ const styles = StyleSheet.create({
   },
   selectorChevron: {
     color: '#9AA49E',
-    fontSize: 16
+    fontSize: 20,
+    transform: [{ rotate: '90deg' }]
   },
   modalOuter: {
     flex: 1,
@@ -755,5 +1134,18 @@ const styles = StyleSheet.create({
     color: '#55635C',
     fontSize: 15,
     fontWeight: '600'
+  },
+  quietTimeRow: {
+    flexDirection: 'row',
+    gap: 12
+  },
+  quietTimeItem: {
+    flex: 1,
+    gap: 8
+  },
+  quietHint: {
+    color: '#9AA49E',
+    fontSize: 13,
+    lineHeight: 18
   }
 })
