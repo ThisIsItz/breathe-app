@@ -3,9 +3,9 @@ import { Screen } from '@/components/screen'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
 import * as Notifications from 'expo-notifications'
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Animated, StyleSheet, Text, View } from 'react-native'
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 
 const TICK_MS = 1000
 
@@ -19,6 +19,7 @@ Notifications.setNotificationHandler({
 })
 
 export default function HomeScreen() {
+  const router = useRouter()
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [isSessionComplete, setIsSessionComplete] = useState(false)
   const [completedSessions, setCompletedSessions] = useState(0)
@@ -236,9 +237,16 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          <Text style={styles.settingsSummary}>
-            {totalCycles} breaths · {inhaleDuration}s in · {exhaleDuration}s out
-          </Text>
+          <Pressable
+            style={styles.settingsCard}
+            onPress={() => router.navigate('/settings')}
+          >
+            <Text style={styles.settingsCardLine}>{totalCycles} breaths</Text>
+            <Text style={styles.settingsCardLine}>
+              {inhaleDuration}s in · {exhaleDuration}s out
+            </Text>
+            <Text style={styles.settingsCardHint}>Tap to customize</Text>
+          </Pressable>
 
           <PrimaryButton label="Start breathing" onPress={startSession} />
 
@@ -285,11 +293,25 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     lineHeight: 42
   },
-  settingsSummary: {
-    color: '#9AA49E',
+  settingsCard: {
+    backgroundColor: '#E5E0D7',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    gap: 2,
+    alignSelf: 'flex-start'
+  },
+  settingsCardLine: {
+    color: '#55635C',
     fontSize: 14,
     fontWeight: '500',
-    letterSpacing: 0.2
+    lineHeight: 20
+  },
+  settingsCardHint: {
+    color: '#9AA49E',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 6
   },
   sessionBadge: {
     color: '#9AA49E',
