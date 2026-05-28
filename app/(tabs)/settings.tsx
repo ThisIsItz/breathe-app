@@ -1,6 +1,9 @@
 import { Screen } from '@/components/screen'
 import { SettingRow } from '@/components/setting-row'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import DateTimePicker, {
+  DateTimePickerEvent
+} from '@react-native-community/datetimepicker'
 import { Picker } from '@react-native-picker/picker'
 import * as Notifications from 'expo-notifications'
 import { useEffect, useRef, useState } from 'react'
@@ -29,13 +32,19 @@ const REMINDER_OPTIONS: Array<{ value: ReminderMode; label: string }> = [
   { value: 'daily', label: 'Daily' }
 ]
 
-const DAILY_HOUR_OPTIONS = [8, 9, 12, 18, 20]
 const CHANNEL_ID = 'anchor-reminders'
 
-const formatHour = (h: number) =>
-  h === 0 ? '12am' : h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h - 12}pm`
+const formatTime = (h: number, m: number) => {
+  const period = h < 12 ? 'AM' : 'PM'
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h
+  return `${displayH}:${m.toString().padStart(2, '0')} ${period}`
+}
 
-async function applyReminder(mode: ReminderMode, hour: number): Promise<void> {
+async function applyReminder(
+  mode: ReminderMode,
+  hour: number,
+  minute: number
+): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync()
   if (mode === 'off') return
 
@@ -85,21 +94,31 @@ export default function SettingsScreen() {
   const [hapticsEnabled, setHapticsEnabled] = useState(true)
   const [reminderMode, setReminderMode] = useState<ReminderMode>('off')
   const [dailyHour, setDailyHour] = useState(9)
+  const [dailyMinute, setDailyMinute] = useState(0)
+  const [showTimePicker, setShowTimePicker] = useState(false)
 
   const isLoaded = useRef(false)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [breaths, inhale, exhale, haptics, reminder, savedHour] =
-          await Promise.all([
-            AsyncStorage.getItem('anchor:totalCycles'),
-            AsyncStorage.getItem('anchor:inhaleDuration'),
-            AsyncStorage.getItem('anchor:exhaleDuration'),
-            AsyncStorage.getItem('anchor:haptics'),
-            AsyncStorage.getItem('anchor:reminderMode'),
-            AsyncStorage.getItem('anchor:dailyHour')
-          ])
+        const [
+          breaths,
+          inhale,
+          exhale,
+          haptics,
+          reminder,
+          savedHour,
+          savedMinute
+        ] = await Promise.all([
+          AsyncStorage.getItem('anchor:totalCycles'),
+          AsyncStorage.getItem('anchor:inhaleDuration'),
+          AsyncStorage.getItem('anchor:exhaleDuration'),
+          AsyncStorage.getItem('anchor:haptics'),
+          AsyncStorage.getItem('anchor:reminderMode'),
+          AsyncStorage.getItem('anchor:dailyHour'),
+          AsyncStorage.getItem('anchor:dailyMinute')
+        ])
         const pb = breaths ? parseInt(breaths, 10) : null
         if (pb !== null && pb >= 1 && pb <= 20) setTotalCycles(pb)
         const pi = inhale ? parseInt(inhale, 10) : null
@@ -111,7 +130,9 @@ export default function SettingsScreen() {
         if (reminder && validModes.includes(reminder as ReminderMode))
           setReminderMode(reminder as ReminderMode)
         const ph = savedHour ? parseInt(savedHour, 10) : null
-        if (ph !== null && DAILY_HOUR_OPTIONS.includes(ph)) setDailyHour(ph)
+        if (ph !== null && ph >= 0 && ph <= 23) setDailyHour(ph)
+        const pm = savedMinute ? parseInt(savedMinute, 10) : null
+        if (pm !== null && pm >= 0 && pm <= 59) setDailyMinute(pm)
       } catch {}
       isLoaded.current = true
     }
@@ -156,15 +177,30 @@ export default function SettingsScreen() {
     AsyncStorage.setItem('anchor:dailyHour', String(dailyHour)).catch(() => {})
   }, [dailyHour])
 
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem('anchor:dailyMinute', String(dailyMinute)).catch(
+      () => {}
+    )
+  }, [dailyMinute])
+
   const handleReminderChange = (mode: ReminderMode) => {
     setReminderMode(mode)
-    applyReminder(mode, dailyHour).catch(() => {})
+    applyReminder(mode, dailyHour, dailyMinute).catch(() => {})
   }
 
-  const handleDailyHourChange = (hour: number) => {
-    setDailyHour(hour)
+  const handleTimeChange = (
+    _event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === 'android') setShowTimePicker(false)
+    if (!selectedDate) return
+    const h = selectedDate.getHours()
+    const m = selectedDate.getMinutes()
+    setDailyHour(h)
+    setDailyMinute(m)
     if (reminderMode === 'daily') {
-      applyReminder('daily', hour).catch(() => {})
+      applyReminder('daily', h, m).catch(() => {})
     }
   }
 
@@ -355,28 +391,36 @@ export default function SettingsScreen() {
                   )
                 })}
               </View>
-              {reminderMode === 'daily' && (
-                <View style={styles.dailyRow}>
-                  {DAILY_HOUR_OPTIONS.map((h) => (
-                    <Pressable
-                      key={h}
-                      style={[
-                        styles.tagPill,
-                        dailyHour === h && styles.pillActive
-                      ]}
-                      onPress={() => handleDailyHourChange(h)}
-                    >
-                      <Text
-                        style={[
-                          styles.tagPillText,
-                          dailyHour === h && styles.pillTextActive
-                        ]}
-                      >
-                        {formatHour(h)}
-                      </Text>
-                    </Pressable>
-                  ))}
+              {reminderMode === 'daily' && Platform.OS === 'ios' && (
+                <View style={[styles.pickerWrapper, styles.pickerWrapperIos]}>
+                  <DateTimePicker
+                    value={new Date(2000, 0, 1, dailyHour, dailyMinute, 0)}
+                    mode="time"
+                    display="spinner"
+                    onChange={handleTimeChange}
+                  />
                 </View>
+              )}
+              {reminderMode === 'daily' && Platform.OS !== 'ios' && (
+                <>
+                  <Pressable
+                    style={styles.timeDisplay}
+                    onPress={() => setShowTimePicker(true)}
+                  >
+                    <Text style={styles.timeDisplayText}>
+                      {formatTime(dailyHour, dailyMinute)}
+                    </Text>
+                    <Text style={styles.timeDisplayHint}>tap to change</Text>
+                  </Pressable>
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={new Date(2000, 0, 1, dailyHour, dailyMinute, 0)}
+                      mode="time"
+                      display="default"
+                      onChange={handleTimeChange}
+                    />
+                  )}
+                </>
               )}
             </SettingRow>
           </View>
@@ -490,11 +534,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#2E5E4E',
     borderColor: '#2E5E4E'
   },
-  dailyRow: {
+  timeDisplay: {
     flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-    paddingTop: 4
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#EDE8DF',
+    borderRadius: 14,
+    marginTop: 4
+  },
+  timeDisplayText: {
+    color: '#1F2A24',
+    fontSize: 17,
+    fontWeight: '600'
+  },
+  timeDisplayHint: {
+    color: '#9AA49E',
+    fontSize: 13
   },
   paceRow: {
     flexDirection: 'row',
