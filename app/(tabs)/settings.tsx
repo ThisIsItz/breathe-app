@@ -20,9 +20,9 @@ type ReminderMode = 'off' | '1h' | '2h' | '4h' | 'daily'
 
 const REMINDER_OPTIONS: Array<{ value: ReminderMode; label: string }> = [
   { value: 'off', label: 'Off' },
-  { value: '1h', label: '1h' },
-  { value: '2h', label: '2h' },
-  { value: '4h', label: '4h' },
+  { value: '1h', label: 'Every hour' },
+  { value: '2h', label: 'Every 2 hours' },
+  { value: '4h', label: 'Every 4 hours' },
   { value: 'daily', label: 'Daily' }
 ]
 
@@ -173,154 +173,167 @@ export default function SettingsScreen() {
       >
         <Text style={styles.heading}>Settings</Text>
 
-        <View style={styles.group}>
-          <SettingRow label="Breaths per session">
-            <View style={styles.row}>
-              {BREATH_OPTIONS.map((n) => (
-                <Pressable
-                  key={n}
-                  style={[styles.pill, totalCycles === n && styles.pillActive]}
-                  onPress={() => setTotalCycles(n)}
-                >
-                  <Text
-                    style={[
-                      styles.pillText,
-                      totalCycles === n && styles.pillTextActive
-                    ]}
-                  >
-                    {n}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </SettingRow>
-
-          <SettingRow label="Inhale">
-            <View style={styles.row}>
-              {INHALE_OPTIONS.map((n) => (
-                <Pressable
-                  key={n}
-                  style={[
-                    styles.pill,
-                    inhaleDuration === n && styles.pillActive
-                  ]}
-                  onPress={() => setInhaleDuration(n)}
-                >
-                  <Text
-                    style={[
-                      styles.pillText,
-                      inhaleDuration === n && styles.pillTextActive
-                    ]}
-                  >
-                    {n}s
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </SettingRow>
-
-          <SettingRow label="Exhale">
-            <View style={styles.row}>
-              {EXHALE_OPTIONS.map((n) => (
-                <Pressable
-                  key={n}
-                  style={[
-                    styles.pill,
-                    exhaleDuration === n && styles.pillActive
-                  ]}
-                  onPress={() => setExhaleDuration(n)}
-                >
-                  <Text
-                    style={[
-                      styles.pillText,
-                      exhaleDuration === n && styles.pillTextActive
-                    ]}
-                  >
-                    {n}s
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </SettingRow>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.group}>
-          <SettingRow label="Haptics">
-            <View style={styles.row}>
-              {([true, false] as const).map((value) => (
-                <Pressable
-                  key={String(value)}
-                  style={[
-                    styles.pill,
-                    hapticsEnabled === value && styles.pillActive
-                  ]}
-                  onPress={() => setHapticsEnabled(value)}
-                >
-                  <Text
-                    style={[
-                      styles.pillText,
-                      hapticsEnabled === value && styles.pillTextActive
-                    ]}
-                  >
-                    {value ? 'On' : 'Off'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </SettingRow>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.group}>
-          <SettingRow label="Reminder">
-            <View style={styles.row}>
-              {REMINDER_OPTIONS.map(({ value, label }) => (
-                <Pressable
-                  key={value}
-                  style={[
-                    styles.tagPill,
-                    reminderMode === value && styles.pillActive
-                  ]}
-                  onPress={() => handleReminderChange(value)}
-                >
-                  <Text
-                    style={[
-                      styles.tagPillText,
-                      reminderMode === value && styles.pillTextActive
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            {reminderMode === 'daily' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Breathing</Text>
+          <View style={styles.group}>
+            <SettingRow label="Breaths per session">
               <View style={styles.row}>
-                {DAILY_HOUR_OPTIONS.map((h) => (
+                {BREATH_OPTIONS.map((n) => (
                   <Pressable
-                    key={h}
+                    key={n}
                     style={[
-                      styles.tagPill,
-                      dailyHour === h && styles.pillActive
+                      styles.pill,
+                      totalCycles === n && styles.pillActive
                     ]}
-                    onPress={() => handleDailyHourChange(h)}
+                    onPress={() => setTotalCycles(n)}
                   >
                     <Text
                       style={[
-                        styles.tagPillText,
-                        dailyHour === h && styles.pillTextActive
+                        styles.pillText,
+                        totalCycles === n && styles.pillTextActive
                       ]}
                     >
-                      {formatHour(h)}
+                      {n}
                     </Text>
                   </Pressable>
                 ))}
               </View>
-            )}
-          </SettingRow>
+            </SettingRow>
+
+            <SettingRow label="Inhale">
+              <View style={styles.row}>
+                {INHALE_OPTIONS.map((n) => (
+                  <Pressable
+                    key={n}
+                    style={[
+                      styles.pill,
+                      inhaleDuration === n && styles.pillActive
+                    ]}
+                    onPress={() => setInhaleDuration(n)}
+                  >
+                    <Text
+                      style={[
+                        styles.pillText,
+                        inhaleDuration === n && styles.pillTextActive
+                      ]}
+                    >
+                      {n}s
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </SettingRow>
+
+            <SettingRow label="Exhale">
+              <View style={styles.row}>
+                {EXHALE_OPTIONS.map((n) => (
+                  <Pressable
+                    key={n}
+                    style={[
+                      styles.pill,
+                      exhaleDuration === n && styles.pillActive
+                    ]}
+                    onPress={() => setExhaleDuration(n)}
+                  >
+                    <Text
+                      style={[
+                        styles.pillText,
+                        exhaleDuration === n && styles.pillTextActive
+                      ]}
+                    >
+                      {n}s
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </SettingRow>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Experience</Text>
+          <View style={styles.group}>
+            <SettingRow label="Haptics">
+              <View style={styles.row}>
+                {([true, false] as const).map((value) => (
+                  <Pressable
+                    key={String(value)}
+                    style={[
+                      styles.tagPill,
+                      hapticsEnabled === value && styles.pillActive
+                    ]}
+                    onPress={() => setHapticsEnabled(value)}
+                  >
+                    <Text
+                      style={[
+                        styles.tagPillText,
+                        hapticsEnabled === value && styles.pillTextActive
+                      ]}
+                    >
+                      {value ? 'On' : 'Off'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </SettingRow>
+
+            <SettingRow label="Reminder">
+              <View style={styles.optionList}>
+                {REMINDER_OPTIONS.map(({ value, label }, i) => {
+                  const active = reminderMode === value
+                  return (
+                    <Pressable
+                      key={value}
+                      style={[
+                        styles.optionRow,
+                        i < REMINDER_OPTIONS.length - 1 &&
+                          styles.optionRowBorder
+                      ]}
+                      onPress={() => handleReminderChange(value)}
+                    >
+                      <Text
+                        style={[
+                          styles.optionText,
+                          active && styles.optionTextActive
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                      <View
+                        style={[
+                          styles.optionDot,
+                          active && styles.optionDotActive
+                        ]}
+                      />
+                    </Pressable>
+                  )
+                })}
+              </View>
+              {reminderMode === 'daily' && (
+                <View style={styles.dailyRow}>
+                  {DAILY_HOUR_OPTIONS.map((h) => (
+                    <Pressable
+                      key={h}
+                      style={[
+                        styles.tagPill,
+                        dailyHour === h && styles.pillActive
+                      ]}
+                      onPress={() => handleDailyHourChange(h)}
+                    >
+                      <Text
+                        style={[
+                          styles.tagPillText,
+                          dailyHour === h && styles.pillTextActive
+                        ]}
+                      >
+                        {formatHour(h)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </SettingRow>
+          </View>
         </View>
       </ScrollView>
     </Screen>
@@ -332,14 +345,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingTop: 48,
     paddingBottom: 40,
-    gap: 24
+    gap: 36
   },
   heading: {
     color: '#1F2A24',
     fontSize: 32,
     fontWeight: '700',
-    letterSpacing: -0.8,
-    marginBottom: 8
+    letterSpacing: -0.8
+  },
+  section: {
+    gap: 16
+  },
+  sectionTitle: {
+    color: '#1F2A24',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.4
   },
   group: {
     gap: 24
@@ -368,19 +389,58 @@ const styles = StyleSheet.create({
     color: '#F8F6F2'
   },
   tagPill: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
     backgroundColor: '#E5E0D7',
-    alignItems: 'center'
+    alignItems: 'center',
+    minWidth: 56
   },
   tagPillText: {
     color: '#3A4942',
     fontSize: 14,
     fontWeight: '600'
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E0D7'
+  optionList: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#EDE8DF'
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    paddingHorizontal: 16
+  },
+  optionRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#D5CFC6'
+  },
+  optionText: {
+    color: '#55635C',
+    fontSize: 15,
+    fontWeight: '500'
+  },
+  optionTextActive: {
+    color: '#2E5E4E',
+    fontWeight: '600'
+  },
+  optionDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#C8C2B8'
+  },
+  optionDotActive: {
+    backgroundColor: '#2E5E4E',
+    borderColor: '#2E5E4E'
+  },
+  dailyRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+    paddingTop: 4
   }
 })
