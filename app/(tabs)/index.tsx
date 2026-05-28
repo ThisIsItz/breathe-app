@@ -5,19 +5,29 @@ import * as Haptics from 'expo-haptics'
 import * as Notifications from 'expo-notifications'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import {
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native'
 
 const TICK_MS = 1000
 
 const COMPLETION_MESSAGES = [
-  { heading: 'Well done.', body: 'You took a moment\nfor yourself.' },
-  { heading: 'Welcome back.', body: 'That was a small act of care.' },
+  { heading: 'A quiet moment.', body: 'Sometimes that is enough.' },
   { heading: 'Still here.', body: 'A little more grounded.' },
   { heading: 'You showed up.', body: 'That matters.' },
   { heading: 'Gently done.', body: 'You made space for yourself.' },
+  { heading: 'Present again.', body: 'Right here, right now.' },
   { heading: 'A small pause.', body: 'It can change a lot.' },
-  { heading: "That's enough.", body: 'You gave yourself a moment of quiet.' },
-  { heading: 'Nice work.', body: 'The world can wait a little longer.' }
+  { heading: 'A gentle pause', body: 'You gave yourself a moment of quiet.' },
+  {
+    heading: 'A moment of stillness.',
+    body: 'The world can wait a little longer.'
+  }
 ] as const
 
 function todayISO(): string {
@@ -57,6 +67,7 @@ export default function HomeScreen() {
   const [isFinishing, setIsFinishing] = useState(false)
   const finishFade = useRef(new Animated.Value(1)).current
   const completionFade = useRef(new Animated.Value(0)).current
+  const homeOrbAnim = useRef(new Animated.Value(0)).current
   const isLoaded = useRef(false)
 
   useEffect(() => {
@@ -230,6 +241,25 @@ export default function HomeScreen() {
   }, [cycleCount, isSessionActive, phase, phaseCount, totalCycles])
 
   useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(homeOrbAnim, {
+          toValue: 1,
+          duration: 4000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true
+        }),
+        Animated.timing(homeOrbAnim, {
+          toValue: 0,
+          duration: 4000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true
+        })
+      ])
+    ).start()
+  }, [])
+
+  useEffect(() => {
     if (!isSessionActive) return
     if (phase === 'Hold') return
 
@@ -244,6 +274,11 @@ export default function HomeScreen() {
   const circleScale = circleAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0.8, 1.7]
+  })
+
+  const homeOrbScale = homeOrbAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.9, 1.1]
   })
 
   return (
@@ -264,36 +299,34 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {!isFinishing && (
-            <>
-              <View style={styles.sessionInfo}>
-                <Text style={styles.phaseText}>{phase}</Text>
-                <Text style={styles.countText}>{phaseCount}</Text>
-              </View>
+          <View
+            style={[styles.sessionControls, { opacity: isFinishing ? 0 : 1 }]}
+          >
+            <View style={styles.sessionInfo}>
+              <Text style={styles.phaseText}>{phase}</Text>
+              <Text style={styles.countText}>{phaseCount}</Text>
+            </View>
 
-              <View style={styles.progressDots}>
-                {Array.from({ length: totalCycles }, (_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.dot,
-                      i + 1 <= cycleCount
-                        ? styles.dotActive
-                        : styles.dotInactive
-                    ]}
-                  />
-                ))}
-              </View>
+            <View style={styles.progressDots}>
+              {Array.from({ length: totalCycles }, (_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.dot,
+                    i + 1 <= cycleCount ? styles.dotActive : styles.dotInactive
+                  ]}
+                />
+              ))}
+            </View>
 
-              <Pressable
-                onPress={cancelSession}
-                hitSlop={12}
-                style={styles.cancelBtn}
-              >
-                <Text style={styles.cancelText}>cancel</Text>
-              </Pressable>
-            </>
-          )}
+            <Pressable
+              onPress={cancelSession}
+              hitSlop={12}
+              style={styles.cancelBtn}
+            >
+              <Text style={styles.cancelText}>cancel</Text>
+            </Pressable>
+          </View>
         </Animated.View>
       ) : isSessionComplete ? (
         <Animated.View
@@ -332,8 +365,15 @@ export default function HomeScreen() {
           <View style={styles.homeHeader}>
             <Text style={styles.title}>Anchor</Text>
             <Text style={styles.tagline}>
-              A tiny pause to come back to yourself.
+              Take a few breaths and come back to the present moment.
             </Text>
+          </View>
+
+          <View style={styles.homeOrbContainer}>
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.homeOrb, { transform: [{ scale: homeOrbScale }] }]}
+            />
           </View>
 
           <Pressable
@@ -343,14 +383,15 @@ export default function HomeScreen() {
             <Text style={styles.settingsText}>
               {inhaleDuration}s in
               {holdDuration > 0 ? ` · ${holdDuration}s hold` : ''} ·{' '}
-              {exhaleDuration}s out · {totalCycles} breaths
+              {exhaleDuration}s out · {totalCycles}{' '}
+              {totalCycles === 1 ? 'breath' : 'breaths'}
             </Text>
             <Text style={styles.settingsHint}>customize ›</Text>
           </Pressable>
 
           <View style={styles.startArea}>
             <Pressable style={styles.startButton} onPress={startSession}>
-              <Text style={styles.startButtonText}>Begin</Text>
+              <Text style={styles.startButtonText}>Breathe</Text>
             </Pressable>
             {sessionsToday > 0 && (
               <Text style={styles.sessionBadge}>
@@ -374,6 +415,16 @@ function makeStyles(c: ReturnType<typeof useAppTheme>) {
       paddingBottom: 52,
       justifyContent: 'space-between'
     },
+    homeOrbContainer: {
+      alignItems: 'center'
+    },
+    homeOrb: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: c.primary,
+      opacity: c.circleOpacityInner
+    },
     homeHeader: {
       gap: 6
     },
@@ -386,7 +437,8 @@ function makeStyles(c: ReturnType<typeof useAppTheme>) {
     tagline: {
       color: c.textMuted,
       fontSize: 15,
-      lineHeight: 22
+      lineHeight: 22,
+      maxWidth: 250
     },
     settingsLink: {
       gap: 4
@@ -418,9 +470,8 @@ function makeStyles(c: ReturnType<typeof useAppTheme>) {
       letterSpacing: 0.2
     },
     sessionBadge: {
-      color: c.textMuted,
-      fontSize: 13,
-      fontWeight: '500',
+      color: c.textFaint,
+      fontSize: 12,
       letterSpacing: 0.2,
       textAlign: 'center'
     },
@@ -466,6 +517,10 @@ function makeStyles(c: ReturnType<typeof useAppTheme>) {
       fontSize: 15,
       fontWeight: '500',
       letterSpacing: 0.3
+    },
+    sessionControls: {
+      alignItems: 'center',
+      width: '100%'
     },
     sessionContainer: {
       flex: 1,
