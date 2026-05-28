@@ -23,7 +23,7 @@ export default function HomeScreen() {
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [isSessionComplete, setIsSessionComplete] = useState(false)
   const [completedSessions, setCompletedSessions] = useState(0)
-  const [totalCycles, setTotalCycles] = useState<3 | 5>(3)
+  const [totalCycles, setTotalCycles] = useState<number>(3)
   const [inhaleDuration, setInhaleDuration] = useState<number>(4)
   const [exhaleDuration, setExhaleDuration] = useState<number>(6)
   const [hapticsEnabled, setHapticsEnabled] = useState(true)
@@ -44,8 +44,8 @@ export default function HomeScreen() {
           AsyncStorage.getItem('anchor:exhaleDuration'),
           AsyncStorage.getItem('anchor:haptics')
         ])
-        if (breaths === '3' || breaths === '5')
-          setTotalCycles(breaths === '5' ? 5 : 3)
+        const pb = breaths ? parseInt(breaths, 10) : null
+        if (pb !== null && pb >= 1 && pb <= 20) setTotalCycles(pb)
         if (sessions !== null) setCompletedSessions(parseInt(sessions, 10))
         const pi = inhale ? parseInt(inhale, 10) : null
         if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
@@ -68,8 +68,8 @@ export default function HomeScreen() {
         AsyncStorage.getItem('anchor:haptics')
       ])
         .then(([breaths, inhale, exhale, haptics]) => {
-          if (breaths === '3' || breaths === '5')
-            setTotalCycles(breaths === '5' ? 5 : 3)
+          const pb = breaths ? parseInt(breaths, 10) : null
+          if (pb !== null && pb >= 1 && pb <= 20) setTotalCycles(pb)
           const pi = inhale ? parseInt(inhale, 10) : null
           if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
           const pe = exhale ? parseInt(exhale, 10) : null

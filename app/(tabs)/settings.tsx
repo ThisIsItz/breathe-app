@@ -13,7 +13,8 @@ import {
   View
 } from 'react-native'
 
-const BREATH_OPTIONS = [3, 5] as const
+const BREATH_PRESETS: number[] = [3, 5, 10]
+const CUSTOM_RANGE = Array.from({ length: 20 }, (_, i) => i + 1)
 
 const INHALE_RANGE = Array.from({ length: 10 }, (_, i) => i + 1)
 const EXHALE_RANGE = Array.from({ length: 15 }, (_, i) => i + 1)
@@ -78,7 +79,7 @@ async function applyReminder(mode: ReminderMode, hour: number): Promise<void> {
 }
 
 export default function SettingsScreen() {
-  const [totalCycles, setTotalCycles] = useState<3 | 5>(3)
+  const [totalCycles, setTotalCycles] = useState<number>(3)
   const [inhaleDuration, setInhaleDuration] = useState<number>(4)
   const [exhaleDuration, setExhaleDuration] = useState<number>(6)
   const [hapticsEnabled, setHapticsEnabled] = useState(true)
@@ -99,8 +100,8 @@ export default function SettingsScreen() {
             AsyncStorage.getItem('anchor:reminderMode'),
             AsyncStorage.getItem('anchor:dailyHour')
           ])
-        if (breaths === '3' || breaths === '5')
-          setTotalCycles(breaths === '5' ? 5 : 3)
+        const pb = breaths ? parseInt(breaths, 10) : null
+        if (pb !== null && pb >= 1 && pb <= 20) setTotalCycles(pb)
         const pi = inhale ? parseInt(inhale, 10) : null
         if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
         const pe = exhale ? parseInt(exhale, 10) : null
@@ -167,6 +168,8 @@ export default function SettingsScreen() {
     }
   }
 
+  const isCustom = !BREATH_PRESETS.includes(totalCycles)
+
   return (
     <Screen>
       <ScrollView
@@ -180,7 +183,7 @@ export default function SettingsScreen() {
           <View style={styles.group}>
             <SettingRow label="Breaths per session">
               <View style={styles.row}>
-                {BREATH_OPTIONS.map((n) => (
+                {BREATH_PRESETS.map((n) => (
                   <Pressable
                     key={n}
                     style={[
@@ -199,7 +202,43 @@ export default function SettingsScreen() {
                     </Text>
                   </Pressable>
                 ))}
+                <Pressable
+                  style={[styles.pillWide, isCustom && styles.pillActive]}
+                  onPress={() => {
+                    if (!isCustom) setTotalCycles(7)
+                  }}
+                >
+                  <Text
+                    style={[styles.pillText, isCustom && styles.pillTextActive]}
+                  >
+                    Custom
+                  </Text>
+                </Pressable>
               </View>
+              {isCustom && (
+                <View
+                  style={[
+                    styles.pickerWrapper,
+                    Platform.OS === 'ios' && styles.pickerWrapperIos
+                  ]}
+                >
+                  <Picker
+                    selectedValue={totalCycles}
+                    onValueChange={(v: number) => setTotalCycles(v)}
+                    style={styles.picker}
+                    dropdownIconColor="#55635C"
+                  >
+                    {CUSTOM_RANGE.map((n) => (
+                      <Picker.Item
+                        key={n}
+                        label={`${n}`}
+                        value={n}
+                        color="#1F2A24"
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              )}
             </SettingRow>
 
             <View style={styles.paceRow}>
@@ -394,6 +433,13 @@ const styles = StyleSheet.create({
   },
   pillTextActive: {
     color: '#F8F6F2'
+  },
+  pillWide: {
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: '#E5E0D7',
+    alignItems: 'center' as const
   },
   tagPill: {
     paddingHorizontal: 16,
