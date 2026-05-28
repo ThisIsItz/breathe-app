@@ -25,7 +25,10 @@ const EXHALE_RANGE = Array.from({ length: 15 }, (_, i) => i + 1)
 
 const INHALE_OPTIONS = INHALE_RANGE.map((n) => ({ label: `${n}s`, value: n }))
 const EXHALE_OPTIONS = EXHALE_RANGE.map((n) => ({ label: `${n}s`, value: n }))
-const HOLD_OPTIONS = [0, 1, 2, 3].map((n) => ({ label: n === 0 ? 'Off' : `${n}s`, value: n }))
+const HOLD_OPTIONS = [0, 1, 2, 3].map((n) => ({
+  label: n === 0 ? 'Off' : `${n}s`,
+  value: n
+}))
 const CUSTOM_OPTIONS = CUSTOM_RANGE.map((n) => ({ label: `${n}`, value: n }))
 
 type ReminderMode = 'off' | '1h' | '2h' | '4h' | 'daily'
@@ -263,6 +266,7 @@ export default function SettingsScreen() {
   const [dailyHour, setDailyHour] = useState(9)
   const [dailyMinute, setDailyMinute] = useState(0)
   const [showTimePicker, setShowTimePicker] = useState(false)
+  const [showHoldInfo, setShowHoldInfo] = useState(false)
   const [quietEnabled, setQuietEnabled] = useState(false)
   const [quietStartHour, setQuietStartHour] = useState(22)
   const [quietStartMinute, setQuietStartMinute] = useState(0)
@@ -630,7 +634,16 @@ export default function SettingsScreen() {
                 />
               </View>
               <View style={styles.paceItem}>
-                <Text style={styles.paceLabel}>Hold</Text>
+                <View style={styles.holdLabelRow}>
+                  <Text style={styles.paceLabel}>Hold</Text>
+                  <Pressable
+                    onPress={() => setShowHoldInfo(true)}
+                    style={styles.holdInfoBtn}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.holdInfoIcon}>i</Text>
+                  </Pressable>
+                </View>
                 <PickerSelector
                   value={holdDuration}
                   options={HOLD_OPTIONS}
@@ -899,6 +912,35 @@ export default function SettingsScreen() {
       >
         <Text style={styles.toastText}>Saved</Text>
       </Animated.View>
+
+      <Modal
+        visible={showHoldInfo}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowHoldInfo(false)}
+      >
+        <View style={styles.modalOuter}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowHoldInfo(false)}
+          />
+          <View style={styles.holdInfoSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.holdInfoHeading}>About breath holds</Text>
+            <Text style={styles.holdInfoBody}>
+              {
+                'Use breath holds only if they feel comfortable for you.\n\nIf you are pregnant or have respiratory or cardiovascular conditions, consider avoiding long breath holds.'
+              }
+            </Text>
+            <Pressable
+              style={styles.modalCancelBtn}
+              onPress={() => setShowHoldInfo(false)}
+            >
+              <Text style={styles.modalCancelText}>Got it</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   )
 }
@@ -1053,6 +1095,46 @@ const styles = StyleSheet.create({
   paceItem: {
     flex: 1,
     gap: 8
+  },
+  holdLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5
+  },
+  holdInfoBtn: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: '#B8B2A8',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  holdInfoIcon: {
+    color: '#B8B2A8',
+    fontSize: 8,
+    fontWeight: '700',
+    lineHeight: 10
+  },
+  holdInfoSheet: {
+    backgroundColor: '#F5F1EA',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+    paddingBottom: 36,
+    paddingHorizontal: 24
+  },
+  holdInfoHeading: {
+    color: '#1F2A24',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12
+  },
+  holdInfoBody: {
+    color: '#55635C',
+    fontSize: 15,
+    lineHeight: 24,
+    marginBottom: 24
   },
   paceLabel: {
     color: '#9AA49E',

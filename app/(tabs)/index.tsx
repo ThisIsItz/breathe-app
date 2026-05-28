@@ -43,14 +43,16 @@ export default function HomeScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [breaths, log, inhale, hold, exhale, haptics] = await Promise.all([
-          AsyncStorage.getItem('anchor:totalCycles'),
-          AsyncStorage.getItem('anchor:sessionsLog'),
-          AsyncStorage.getItem('anchor:inhaleDuration'),
-          AsyncStorage.getItem('anchor:holdDuration'),
-          AsyncStorage.getItem('anchor:exhaleDuration'),
-          AsyncStorage.getItem('anchor:haptics')
-        ])
+        const [breaths, log, inhale, hold, exhale, haptics] = await Promise.all(
+          [
+            AsyncStorage.getItem('anchor:totalCycles'),
+            AsyncStorage.getItem('anchor:sessionsLog'),
+            AsyncStorage.getItem('anchor:inhaleDuration'),
+            AsyncStorage.getItem('anchor:holdDuration'),
+            AsyncStorage.getItem('anchor:exhaleDuration'),
+            AsyncStorage.getItem('anchor:haptics')
+          ]
+        )
         const pb = breaths ? parseInt(breaths, 10) : null
         if (pb !== null && pb >= 1 && pb <= 20) setTotalCycles(pb)
         const parsed: string[] = log ? JSON.parse(log) : []
@@ -273,7 +275,9 @@ export default function HomeScreen() {
           >
             <Text style={styles.settingsCardLine}>{totalCycles} breaths</Text>
             <Text style={styles.settingsCardLine}>
-              {inhaleDuration}s in{holdDuration > 0 ? ` · ${holdDuration}s hold` : ''} · {exhaleDuration}s out
+              {inhaleDuration}s in
+              {holdDuration > 0 ? ` · ${holdDuration}s hold` : ''} ·{' '}
+              {exhaleDuration}s out
             </Text>
             <Text style={styles.settingsCardHint}>Tap to customize</Text>
           </Pressable>
@@ -404,7 +408,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 100,
     backgroundColor: '#2E5E4E',
-    opacity: 0.20
+    opacity: 0.2
   },
   sessionInfo: {
     alignItems: 'center',
