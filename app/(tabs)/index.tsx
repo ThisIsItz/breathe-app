@@ -24,8 +24,8 @@ export default function HomeScreen() {
   const [isSessionComplete, setIsSessionComplete] = useState(false)
   const [completedSessions, setCompletedSessions] = useState(0)
   const [totalCycles, setTotalCycles] = useState<3 | 5>(3)
-  const [inhaleDuration, setInhaleDuration] = useState<3 | 4 | 5>(4)
-  const [exhaleDuration, setExhaleDuration] = useState<4 | 6 | 8>(6)
+  const [inhaleDuration, setInhaleDuration] = useState<number>(4)
+  const [exhaleDuration, setExhaleDuration] = useState<number>(6)
   const [hapticsEnabled, setHapticsEnabled] = useState(true)
   const [cycleCount, setCycleCount] = useState(1)
   const [phaseCount, setPhaseCount] = useState(1)
@@ -48,9 +48,9 @@ export default function HomeScreen() {
           setTotalCycles(breaths === '5' ? 5 : 3)
         if (sessions !== null) setCompletedSessions(parseInt(sessions, 10))
         const pi = inhale ? parseInt(inhale, 10) : null
-        if (pi === 3 || pi === 4 || pi === 5) setInhaleDuration(pi)
+        if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
         const pe = exhale ? parseInt(exhale, 10) : null
-        if (pe === 4 || pe === 6 || pe === 8) setExhaleDuration(pe)
+        if (pe !== null && pe >= 1 && pe <= 15) setExhaleDuration(pe)
         if (haptics === 'false') setHapticsEnabled(false)
       } catch {}
       isLoaded.current = true
@@ -71,9 +71,9 @@ export default function HomeScreen() {
           if (breaths === '3' || breaths === '5')
             setTotalCycles(breaths === '5' ? 5 : 3)
           const pi = inhale ? parseInt(inhale, 10) : null
-          if (pi === 3 || pi === 4 || pi === 5) setInhaleDuration(pi)
+          if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
           const pe = exhale ? parseInt(exhale, 10) : null
-          if (pe === 4 || pe === 6 || pe === 8) setExhaleDuration(pe)
+          if (pe !== null && pe >= 1 && pe <= 15) setExhaleDuration(pe)
           if (haptics !== null) setHapticsEnabled(haptics !== 'false')
         })
         .catch(() => {})

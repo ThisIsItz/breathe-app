@@ -1,6 +1,7 @@
 import { Screen } from '@/components/screen'
 import { SettingRow } from '@/components/setting-row'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Picker } from '@react-native-picker/picker'
 import * as Notifications from 'expo-notifications'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -13,8 +14,9 @@ import {
 } from 'react-native'
 
 const BREATH_OPTIONS = [3, 5] as const
-const INHALE_OPTIONS = [3, 4, 5] as const
-const EXHALE_OPTIONS = [4, 6, 8] as const
+
+const INHALE_RANGE = Array.from({ length: 10 }, (_, i) => i + 1)
+const EXHALE_RANGE = Array.from({ length: 15 }, (_, i) => i + 1)
 
 type ReminderMode = 'off' | '1h' | '2h' | '4h' | 'daily'
 
@@ -77,8 +79,8 @@ async function applyReminder(mode: ReminderMode, hour: number): Promise<void> {
 
 export default function SettingsScreen() {
   const [totalCycles, setTotalCycles] = useState<3 | 5>(3)
-  const [inhaleDuration, setInhaleDuration] = useState<3 | 4 | 5>(4)
-  const [exhaleDuration, setExhaleDuration] = useState<4 | 6 | 8>(6)
+  const [inhaleDuration, setInhaleDuration] = useState<number>(4)
+  const [exhaleDuration, setExhaleDuration] = useState<number>(6)
   const [hapticsEnabled, setHapticsEnabled] = useState(true)
   const [reminderMode, setReminderMode] = useState<ReminderMode>('off')
   const [dailyHour, setDailyHour] = useState(9)
@@ -100,9 +102,9 @@ export default function SettingsScreen() {
         if (breaths === '3' || breaths === '5')
           setTotalCycles(breaths === '5' ? 5 : 3)
         const pi = inhale ? parseInt(inhale, 10) : null
-        if (pi === 3 || pi === 4 || pi === 5) setInhaleDuration(pi)
+        if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
         const pe = exhale ? parseInt(exhale, 10) : null
-        if (pe === 4 || pe === 6 || pe === 8) setExhaleDuration(pe)
+        if (pe !== null && pe >= 1 && pe <= 15) setExhaleDuration(pe)
         if (haptics === 'false') setHapticsEnabled(false)
         const validModes: ReminderMode[] = ['off', '1h', '2h', '4h', 'daily']
         if (reminder && validModes.includes(reminder as ReminderMode))
@@ -200,53 +202,58 @@ export default function SettingsScreen() {
               </View>
             </SettingRow>
 
-            <SettingRow label="Inhale">
-              <View style={styles.row}>
-                {INHALE_OPTIONS.map((n) => (
-                  <Pressable
-                    key={n}
-                    style={[
-                      styles.pill,
-                      inhaleDuration === n && styles.pillActive
-                    ]}
-                    onPress={() => setInhaleDuration(n)}
+            <View style={styles.paceRow}>
+              <View style={styles.paceItem}>
+                <Text style={styles.paceLabel}>Inhale</Text>
+                <View
+                  style={[
+                    styles.pickerWrapper,
+                    Platform.OS === 'ios' && styles.pickerWrapperIos
+                  ]}
+                >
+                  <Picker
+                    selectedValue={inhaleDuration}
+                    onValueChange={(v: number) => setInhaleDuration(v)}
+                    style={styles.picker}
+                    dropdownIconColor="#55635C"
                   >
-                    <Text
-                      style={[
-                        styles.pillText,
-                        inhaleDuration === n && styles.pillTextActive
-                      ]}
-                    >
-                      {n}s
-                    </Text>
-                  </Pressable>
-                ))}
+                    {INHALE_RANGE.map((n) => (
+                      <Picker.Item
+                        key={n}
+                        label={`${n}s`}
+                        value={n}
+                        color="#1F2A24"
+                      />
+                    ))}
+                  </Picker>
+                </View>
               </View>
-            </SettingRow>
-
-            <SettingRow label="Exhale">
-              <View style={styles.row}>
-                {EXHALE_OPTIONS.map((n) => (
-                  <Pressable
-                    key={n}
-                    style={[
-                      styles.pill,
-                      exhaleDuration === n && styles.pillActive
-                    ]}
-                    onPress={() => setExhaleDuration(n)}
+              <View style={styles.paceItem}>
+                <Text style={styles.paceLabel}>Exhale</Text>
+                <View
+                  style={[
+                    styles.pickerWrapper,
+                    Platform.OS === 'ios' && styles.pickerWrapperIos
+                  ]}
+                >
+                  <Picker
+                    selectedValue={exhaleDuration}
+                    onValueChange={(v: number) => setExhaleDuration(v)}
+                    style={styles.picker}
+                    dropdownIconColor="#55635C"
                   >
-                    <Text
-                      style={[
-                        styles.pillText,
-                        exhaleDuration === n && styles.pillTextActive
-                      ]}
-                    >
-                      {n}s
-                    </Text>
-                  </Pressable>
-                ))}
+                    {EXHALE_RANGE.map((n) => (
+                      <Picker.Item
+                        key={n}
+                        label={`${n}s`}
+                        value={n}
+                        color="#1F2A24"
+                      />
+                    ))}
+                  </Picker>
+                </View>
               </View>
-            </SettingRow>
+            </View>
           </View>
         </View>
 
@@ -442,5 +449,31 @@ const styles = StyleSheet.create({
     gap: 8,
     flexWrap: 'wrap',
     paddingTop: 4
+  },
+  paceRow: {
+    flexDirection: 'row',
+    gap: 12
+  },
+  paceItem: {
+    flex: 1,
+    gap: 8
+  },
+  paceLabel: {
+    color: '#9AA49E',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase'
+  },
+  pickerWrapper: {
+    backgroundColor: '#EDE8DF',
+    borderRadius: 14,
+    overflow: 'hidden'
+  },
+  pickerWrapperIos: {
+    height: 160
+  },
+  picker: {
+    color: '#1F2A24'
   }
 })
