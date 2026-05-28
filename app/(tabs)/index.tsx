@@ -113,6 +113,11 @@ export default function HomeScreen() {
           if (haptics !== null) setHapticsEnabled(haptics !== 'false')
         })
         .catch(() => {})
+
+      return () => {
+        setIsSessionComplete(false)
+        completionFade.setValue(0)
+      }
     }, [])
   )
 
