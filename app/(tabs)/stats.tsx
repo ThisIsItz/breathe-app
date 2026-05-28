@@ -3,8 +3,14 @@ import { Screen } from '@/components/screen'
 import { useAppTheme } from '@/hooks/use-app-theme'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native'
 
 const BAR_MAX_HEIGHT = 64
 const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -45,9 +51,12 @@ function computeStreak(log: string[]): number {
 
 type WeekDay = { date: string; count: number; label: string; isToday: boolean }
 
-function buildWeekData(log: string[]): WeekDay[] {
+const MAX_WEEK_OFFSET = 8
+
+function buildWeekDataForOffset(log: string[], weekOffset: number): WeekDay[] {
+  const base = weekOffset * 7
   return Array.from({ length: 7 }, (_, i) => {
-    const daysAgo = 6 - i
+    const daysAgo = base + (6 - i)
     const date = offsetISO(daysAgo)
     return {
       date,
@@ -58,21 +67,55 @@ function buildWeekData(log: string[]): WeekDay[] {
   })
 }
 
+function weekRangeLabel(weekOffset: number): string {
+  if (weekOffset === 0) return 'This week'
+  if (weekOffset === 1) return 'Last week'
+  const end = new Date()
+  end.setDate(end.getDate() - weekOffset * 7)
+  const start = new Date(end)
+  start.setDate(start.getDate() - 6)
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ]
+  const sm = months[start.getMonth()]
+  const em = months[end.getMonth()]
+  return sm === em
+    ? `${sm} ${start.getDate()}–${end.getDate()}`
+    : `${sm} ${start.getDate()} – ${em} ${end.getDate()}`
+}
+
 export default function StatsScreen() {
   const c = useAppTheme()
   const styles = makeStyles(c)
   const [sessionsToday, setSessionsToday] = useState(0)
   const [sessionsThisWeek, setSessionsThisWeek] = useState(0)
   const [streak, setStreak] = useState(0)
-  const [weekData, setWeekData] = useState<WeekDay[]>(() => buildWeekData([]))
+  const [weekData, setWeekData] = useState<WeekDay[]>(() =>
+    buildWeekDataForOffset([], 0)
+  )
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [fullLog, setFullLog] = useState<string[]>([])
 
   useFocusEffect(
     useCallback(() => {
+      setWeekOffset(0)
       AsyncStorage.getItem('anchor:sessionsLog')
         .then((raw) => {
           const log: string[] = raw ? JSON.parse(raw) : []
           const today = todayISO()
-          const week = buildWeekData(log)
+          const week = buildWeekDataForOffset(log, 0)
+          setFullLog(log)
           setSessionsToday(log.filter((d) => d === today).length)
           setSessionsThisWeek(week.reduce((sum, d) => sum + d.count, 0))
           setStreak(computeStreak(log))
@@ -81,6 +124,13 @@ export default function StatsScreen() {
         .catch(() => {})
     }, [])
   )
+
+  useEffect(() => {
+    if (fullLog.length === 0 && weekOffset === 0) return
+    const week = buildWeekDataForOffset(fullLog, weekOffset)
+    setSessionsThisWeek(week.reduce((sum, d) => sum + d.count, 0))
+    setWeekData(week)
+  }, [weekOffset, fullLog])
 
   const maxCount = Math.max(...weekData.map((d) => d.count), 1)
   const rawMax = Math.max(maxCount, 2)
@@ -103,7 +153,13 @@ export default function StatsScreen() {
           </Card>
           <Card style={styles.kpiCard}>
             <Text style={styles.kpiNumber}>{sessionsThisWeek}</Text>
-            <Text style={styles.kpiLabel}>this week</Text>
+            <Text style={styles.kpiLabel}>
+              {weekOffset === 0
+                ? 'this week'
+                : weekOffset === 1
+                  ? 'last week'
+                  : 'that week'}
+            </Text>
           </Card>
           <Card style={styles.kpiCard}>
             <Text style={styles.kpiNumber}>{streak}</Text>
@@ -112,7 +168,41 @@ export default function StatsScreen() {
         </View>
 
         <View style={styles.chartSection}>
-          <Text style={styles.sectionTitle}>Last 7 days</Text>
+          <View style={styles.sectionHeader}>
+            <TouchableOpacity
+              onPress={() =>
+                setWeekOffset((o) => Math.min(o + 1, MAX_WEEK_OFFSET))
+              }
+              disabled={weekOffset >= MAX_WEEK_OFFSET}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Text
+                style={[
+                  styles.navArrow,
+                  weekOffset >= MAX_WEEK_OFFSET && styles.navArrowDisabled
+                ]}
+              >
+                ‹
+              </Text>
+            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>
+              {weekRangeLabel(weekOffset)}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setWeekOffset((o) => Math.max(o - 1, 0))}
+              disabled={weekOffset === 0}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Text
+                style={[
+                  styles.navArrow,
+                  weekOffset === 0 && styles.navArrowDisabled
+                ]}
+              >
+                ›
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.chart}>
             <View style={styles.chartBody}>
               <View style={styles.yAxis}>
@@ -208,6 +298,21 @@ function makeStyles(c: ReturnType<typeof useAppTheme>) {
     },
     chartSection: {
       gap: 14
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    },
+    navArrow: {
+      color: c.textMuted,
+      fontSize: 20,
+      fontWeight: '400',
+      lineHeight: 22
+    },
+    navArrowDisabled: {
+      color: c.textFaint,
+      opacity: 0.35
     },
     sectionTitle: {
       color: c.textMuted,
