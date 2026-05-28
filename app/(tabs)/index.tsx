@@ -41,6 +41,9 @@ export default function HomeScreen() {
   const [phase, setPhase] = useState<'Inhale' | 'Hold' | 'Exhale'>('Inhale')
 
   const circleAnim = useRef(new Animated.Value(0)).current
+  const [isFinishing, setIsFinishing] = useState(false)
+  const finishFade = useRef(new Animated.Value(1)).current
+  const completionFade = useRef(new Animated.Value(0)).current
   const isLoaded = useRef(false)
 
   useEffect(() => {
@@ -110,6 +113,8 @@ export default function HomeScreen() {
   const startSession = () => {
     resetSession()
     setIsSessionComplete(false)
+    finishFade.setValue(1)
+    completionFade.setValue(0)
     setIsSessionActive(true)
   }
 
@@ -123,7 +128,9 @@ export default function HomeScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     resetSession()
     setIsSessionActive(false)
-    setIsSessionComplete(true)
+    setIsFinishing(true)
+    finishFade.setValue(1)
+    completionFade.setValue(0)
     try {
       const today = todayISO()
       const raw = await AsyncStorage.getItem('anchor:sessionsLog')
@@ -132,6 +139,22 @@ export default function HomeScreen() {
       await AsyncStorage.setItem('anchor:sessionsLog', JSON.stringify(log))
       setSessionsToday(log.filter((d) => d === today).length)
     } catch {}
+    Animated.sequence([
+      Animated.delay(900),
+      Animated.timing(finishFade, {
+        toValue: 0,
+        duration: 1400,
+        useNativeDriver: true
+      })
+    ]).start(() => {
+      setIsFinishing(false)
+      setIsSessionComplete(true)
+      Animated.timing(completionFade, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: true
+      }).start()
+    })
   }
 
   useEffect(() => {
@@ -202,8 +225,10 @@ export default function HomeScreen() {
 
   return (
     <Screen>
-      {isSessionActive ? (
-        <View style={styles.sessionContainer}>
+      {isSessionActive || isFinishing ? (
+        <Animated.View
+          style={[styles.sessionContainer, { opacity: finishFade }]}
+        >
           <Text style={styles.sessionTitle}>Anchor</Text>
 
           <View style={styles.circleArea}>
@@ -216,31 +241,39 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View style={styles.sessionInfo}>
-            <Text style={styles.phaseText}>{phase}</Text>
-            <Text style={styles.countText}>{phaseCount}</Text>
-          </View>
+          {!isFinishing && (
+            <>
+              <View style={styles.sessionInfo}>
+                <Text style={styles.phaseText}>{phase}</Text>
+                <Text style={styles.countText}>{phaseCount}</Text>
+              </View>
 
-          <View style={styles.progressDots}>
-            {Array.from({ length: totalCycles }, (_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.dot,
-                  i + 1 <= cycleCount ? styles.dotActive : styles.dotInactive
-                ]}
+              <View style={styles.progressDots}>
+                {Array.from({ length: totalCycles }, (_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      i + 1 <= cycleCount
+                        ? styles.dotActive
+                        : styles.dotInactive
+                    ]}
+                  />
+                ))}
+              </View>
+
+              <PrimaryButton
+                label="Cancel"
+                onPress={cancelSession}
+                variant="secondary"
               />
-            ))}
-          </View>
-
-          <PrimaryButton
-            label="Cancel"
-            onPress={cancelSession}
-            variant="secondary"
-          />
-        </View>
+            </>
+          )}
+        </Animated.View>
       ) : isSessionComplete ? (
-        <View style={styles.homeContainer}>
+        <Animated.View
+          style={[styles.homeContainer, { opacity: completionFade }]}
+        >
           <Text style={styles.title}>Anchor</Text>
 
           <View style={styles.section}>
@@ -262,7 +295,7 @@ export default function HomeScreen() {
               variant="secondary"
             />
           </View>
-        </View>
+        </Animated.View>
       ) : (
         <View style={styles.homeContainer}>
           <View>
