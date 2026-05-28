@@ -1,9 +1,9 @@
+import { Card } from '@/components/card'
+import { Screen } from '@/components/screen'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from 'expo-router'
-import { StatusBar } from 'expo-status-bar'
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function StatsScreen() {
   const [completedSessions, setCompletedSessions] = useState(0)
@@ -19,29 +19,24 @@ export default function StatsScreen() {
   )
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <Screen>
       <View style={styles.container}>
         <Text style={styles.heading}>Stats</Text>
 
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.number}>{completedSessions}</Text>
           <Text style={styles.label}>
             {completedSessions === 1 ? 'session' : 'sessions'} today
           </Text>
-        </View>
+        </Card>
 
         <Text style={styles.placeholder}>More stats coming soon.</Text>
       </View>
-    </SafeAreaView>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F1EA'
-  },
   container: {
     flex: 1,
     paddingHorizontal: 32,
@@ -53,14 +48,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     letterSpacing: -0.8
-  },
-  card: {
-    backgroundColor: '#E5E0D7',
-    borderRadius: 20,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    gap: 6
   },
   number: {
     color: '#2E5E4E',

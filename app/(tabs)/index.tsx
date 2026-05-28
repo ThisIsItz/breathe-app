@@ -1,11 +1,11 @@
+import { PrimaryButton } from '@/components/primary-button'
+import { Screen } from '@/components/screen'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
 import * as Notifications from 'expo-notifications'
 import { useFocusEffect } from 'expo-router'
-import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Animated, StyleSheet, Text, View } from 'react-native'
 
 const TICK_MS = 1000
 
@@ -168,9 +168,7 @@ export default function HomeScreen() {
   })
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
-
+    <Screen>
       {isSessionActive ? (
         <View style={styles.sessionContainer}>
           <Text style={styles.sessionTitle}>Anchor</Text>
@@ -198,9 +196,11 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          <Pressable style={styles.cancelButton} onPress={cancelSession}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </Pressable>
+          <PrimaryButton
+            label="Cancel"
+            onPress={cancelSession}
+            variant="secondary"
+          />
         </View>
       ) : isSessionComplete ? (
         <View style={styles.homeContainer}>
@@ -219,15 +219,12 @@ export default function HomeScreen() {
           </Text>
 
           <View style={styles.actions}>
-            <Pressable style={styles.button} onPress={startSession}>
-              <Text style={styles.buttonText}>Do another session</Text>
-            </Pressable>
-            <Pressable
-              style={styles.cancelButton}
+            <PrimaryButton label="Do another session" onPress={startSession} />
+            <PrimaryButton
+              label="Back home"
               onPress={() => setIsSessionComplete(false)}
-            >
-              <Text style={styles.cancelButtonText}>Back home</Text>
-            </Pressable>
+              variant="secondary"
+            />
           </View>
         </View>
       ) : (
@@ -243,9 +240,7 @@ export default function HomeScreen() {
             {totalCycles} breaths · {inhaleDuration}s in · {exhaleDuration}s out
           </Text>
 
-          <Pressable style={styles.button} onPress={startSession}>
-            <Text style={styles.buttonText}>Start breathing</Text>
-          </Pressable>
+          <PrimaryButton label="Start breathing" onPress={startSession} />
 
           {completedSessions > 0 && (
             <Text style={styles.sessionBadge}>
@@ -255,17 +250,11 @@ export default function HomeScreen() {
           )}
         </View>
       )}
-    </SafeAreaView>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F1EA'
-  },
-
-  // Home + completion shared layout
   homeContainer: {
     flex: 1,
     paddingHorizontal: 32,
@@ -311,32 +300,7 @@ const styles = StyleSheet.create({
   actions: {
     gap: 12
   },
-  button: {
-    backgroundColor: '#2E5E4E',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 999,
-    alignItems: 'center'
-  },
-  buttonText: {
-    color: '#F8F6F2',
-    fontSize: 17,
-    fontWeight: '600'
-  },
-  cancelButton: {
-    backgroundColor: '#E5E0D7',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 999,
-    alignItems: 'center'
-  },
-  cancelButtonText: {
-    color: '#3A4942',
-    fontSize: 17,
-    fontWeight: '600'
-  },
 
-  // Session layout
   sessionContainer: {
     flex: 1,
     paddingHorizontal: 32,

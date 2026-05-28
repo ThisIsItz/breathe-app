@@ -1,6 +1,7 @@
+import { Screen } from '@/components/screen'
+import { SettingRow } from '@/components/setting-row'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Notifications from 'expo-notifications'
-import { StatusBar } from 'expo-status-bar'
 import { useEffect, useRef, useState } from 'react'
 import {
   Platform,
@@ -10,7 +11,6 @@ import {
   Text,
   View
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 const BREATH_OPTIONS = [3, 5] as const
 const INHALE_OPTIONS = [3, 4, 5] as const
@@ -166,8 +166,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <Screen>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -175,8 +174,7 @@ export default function SettingsScreen() {
         <Text style={styles.heading}>Settings</Text>
 
         <View style={styles.group}>
-          <View style={styles.section}>
-            <Text style={styles.label}>Breaths per session</Text>
+          <SettingRow label="Breaths per session">
             <View style={styles.row}>
               {BREATH_OPTIONS.map((n) => (
                 <Pressable
@@ -195,10 +193,9 @@ export default function SettingsScreen() {
                 </Pressable>
               ))}
             </View>
-          </View>
+          </SettingRow>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>Inhale</Text>
+          <SettingRow label="Inhale">
             <View style={styles.row}>
               {INHALE_OPTIONS.map((n) => (
                 <Pressable
@@ -220,10 +217,9 @@ export default function SettingsScreen() {
                 </Pressable>
               ))}
             </View>
-          </View>
+          </SettingRow>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>Exhale</Text>
+          <SettingRow label="Exhale">
             <View style={styles.row}>
               {EXHALE_OPTIONS.map((n) => (
                 <Pressable
@@ -245,14 +241,13 @@ export default function SettingsScreen() {
                 </Pressable>
               ))}
             </View>
-          </View>
+          </SettingRow>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.group}>
-          <View style={styles.section}>
-            <Text style={styles.label}>Haptics</Text>
+          <SettingRow label="Haptics">
             <View style={styles.row}>
               {([true, false] as const).map((value) => (
                 <Pressable
@@ -274,14 +269,13 @@ export default function SettingsScreen() {
                 </Pressable>
               ))}
             </View>
-          </View>
+          </SettingRow>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.group}>
-          <View style={styles.section}>
-            <Text style={styles.label}>Reminder</Text>
+          <SettingRow label="Reminder">
             <View style={styles.row}>
               {REMINDER_OPTIONS.map(({ value, label }) => (
                 <Pressable
@@ -326,18 +320,14 @@ export default function SettingsScreen() {
                 ))}
               </View>
             )}
-          </View>
+          </SettingRow>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F1EA'
-  },
   container: {
     paddingHorizontal: 32,
     paddingTop: 48,
@@ -353,16 +343,6 @@ const styles = StyleSheet.create({
   },
   group: {
     gap: 24
-  },
-  section: {
-    gap: 12
-  },
-  label: {
-    color: '#9AA49E',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase'
   },
   row: {
     flexDirection: 'row',
