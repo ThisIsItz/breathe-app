@@ -32,6 +32,14 @@ const HOLD_OPTIONS = [0, 1, 2, 3].map((n) => ({
 }))
 const CUSTOM_OPTIONS = CUSTOM_RANGE.map((n) => ({ label: `${n}`, value: n }))
 
+const PRESETS = [
+  { name: 'Relax', inhale: 4, hold: 1, exhale: 6, cycles: 5 },
+  { name: 'Focus', inhale: 3, hold: 0, exhale: 3, cycles: 3 },
+  { name: 'Sleep', inhale: 4, hold: 2, exhale: 8, cycles: 5 }
+] as const
+
+type Preset = (typeof PRESETS)[number]
+
 type ReminderMode = 'off' | '1h' | '2h' | '4h' | 'daily'
 
 const REMINDER_OPTIONS: Array<{ value: ReminderMode; label: string }> = [
@@ -575,6 +583,22 @@ export default function SettingsScreen() {
 
   const isCustom = !BREATH_PRESETS.includes(totalCycles)
 
+  const activePreset =
+    PRESETS.find(
+      (p) =>
+        p.inhale === inhaleDuration &&
+        p.hold === holdDuration &&
+        p.exhale === exhaleDuration &&
+        p.cycles === totalCycles
+    ) ?? null
+
+  const applyPreset = (p: Preset) => {
+    setInhaleDuration(p.inhale)
+    setHoldDuration(p.hold)
+    setExhaleDuration(p.exhale)
+    setTotalCycles(p.cycles)
+  }
+
   return (
     <Screen>
       <ScrollView
@@ -582,6 +606,43 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.heading}>Settings</Text>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Presets</Text>
+          <View style={styles.presetsRow}>
+            {PRESETS.map((p) => {
+              const isActive = activePreset?.name === p.name
+              const pattern = `${p.inhale} · ${p.hold > 0 ? p.hold : '–'} · ${p.exhale}`
+              return (
+                <Pressable
+                  key={p.name}
+                  style={[
+                    styles.presetCard,
+                    isActive && styles.presetCardActive
+                  ]}
+                  onPress={() => applyPreset(p)}
+                >
+                  <Text
+                    style={[
+                      styles.presetName,
+                      isActive && styles.presetNameActive
+                    ]}
+                  >
+                    {p.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.presetPattern,
+                      isActive && styles.presetPatternActive
+                    ]}
+                  >
+                    {pattern}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Breathing</Text>
@@ -952,311 +1013,344 @@ export default function SettingsScreen() {
 
 function makeStyles(c: ReturnType<typeof useAppTheme>) {
   return StyleSheet.create({
-  container: {
-    paddingHorizontal: 32,
-    paddingTop: 48,
-    paddingBottom: 40,
-    gap: 36
-  },
-  heading: {
-    color: c.textDark,
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -0.8
-  },
-  toast: {
-    position: 'absolute',
-    bottom: 32,
-    alignSelf: 'center',
-    backgroundColor: c.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 999,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3
-  },
-  toastText: {
-    color: c.textOnPrimary,
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.3
-  },
-  section: {
-    gap: 16
-  },
-  sectionTitle: {
-    color: c.textDark,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.4
-  },
-  group: {
-    gap: 24
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap'
-  },
-  pill: {
-    width: 72,
-    paddingVertical: 14,
-    borderRadius: 16,
-    backgroundColor: c.bgCard,
-    alignItems: 'center'
-  },
-  pillActive: {
-    backgroundColor: c.primary
-  },
-  pillText: {
-    color: c.pillText,
-    fontSize: 20,
-    fontWeight: '600'
-  },
-  pillTextActive: {
-    color: c.textOnPrimary
-  },
-  pillWide: {
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 16,
-    backgroundColor: c.bgCard,
-    alignItems: 'center' as const
-  },
-  tagPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: c.bgCard,
-    alignItems: 'center',
-    minWidth: 56
-  },
-  tagPillText: {
-    color: c.pillText,
-    fontSize: 14,
-    fontWeight: '600'
-  },
-  optionList: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    backgroundColor: c.bgList
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 13,
-    paddingHorizontal: 16
-  },
-  optionRowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border
-  },
-  optionText: {
-    color: c.textBody,
-    fontSize: 15,
-    fontWeight: '500'
-  },
-  optionTextActive: {
-    color: c.primary,
-    fontWeight: '600'
-  },
-  optionDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: c.dot
-  },
-  optionDotActive: {
-    backgroundColor: c.primary,
-    borderColor: c.primary
-  },
-  timeDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: c.bgList,
-    borderRadius: 14,
-    marginTop: 4
-  },
-  timeDisplayText: {
-    color: c.textDark,
-    fontSize: 17,
-    fontWeight: '600'
-  },
-  timeDisplayHint: {
-    color: c.textMuted,
-    fontSize: 20
-  },
-  paceRow: {
-    flexDirection: 'row',
-    gap: 12
-  },
-  paceItem: {
-    flex: 1,
-    gap: 8
-  },
-  holdLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5
-  },
-  holdInfoBtn: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: c.textFaint,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  holdInfoIcon: {
-    color: c.textFaint,
-    fontSize: 8,
-    fontWeight: '700',
-    lineHeight: 10
-  },
-  holdInfoSheet: {
-    backgroundColor: c.bg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 12,
-    paddingBottom: 36,
-    paddingHorizontal: 24
-  },
-  holdInfoHeading: {
-    color: c.textDark,
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12
-  },
-  holdInfoBody: {
-    color: c.textBody,
-    fontSize: 15,
-    lineHeight: 24,
-    marginBottom: 24
-  },
-  paceLabel: {
-    color: c.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase'
-  },
-  pickerWrapper: {
-    backgroundColor: c.bgList,
-    borderRadius: 14,
-    overflow: 'hidden'
-  },
-  pickerWrapperIos: {
-    height: 160
-  },
-  selectorField: {
-    backgroundColor: c.bgList,
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  selectorValue: {
-    color: c.textDark,
-    fontSize: 16,
-    fontWeight: '500'
-  },
-  selectorChevron: {
-    color: c.textMuted,
-    fontSize: 20,
-    transform: [{ rotate: '90deg' }]
-  },
-  modalOuter: {
-    flex: 1,
-    justifyContent: 'flex-end'
-  },
-  modalBackdrop: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: c.modalOverlay
-  },
-  modalSheet: {
-    backgroundColor: c.bg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 12,
-    paddingBottom: 36,
-    paddingHorizontal: 16
-  },
-  modalHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: c.dot,
-    alignSelf: 'center',
-    marginBottom: 16
-  },
-  modalScroll: {
-    maxHeight: 380
-  },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    paddingHorizontal: 16
-  },
-  modalOptionBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border
-  },
-  modalOptionText: {
-    color: c.textBody,
-    fontSize: 16,
-    fontWeight: '500'
-  },
-  modalOptionTextSelected: {
-    color: c.primary,
-    fontWeight: '600'
-  },
-  modalOptionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: c.primary
-  },
-  modalCancelBtn: {
-    marginTop: 8,
-    paddingVertical: 16,
-    alignItems: 'center',
-    backgroundColor: c.bgList,
-    borderRadius: 14
-  },
-  modalCancelText: {
-    color: c.textBody,
-    fontSize: 15,
-    fontWeight: '600'
-  },
-  quietTimeRow: {
-    flexDirection: 'row',
-    gap: 12
-  },
-  quietTimeItem: {
-    flex: 1,
-    gap: 8
-  },
-  quietHint: {
-    color: c.textMuted,
-    fontSize: 13,
-    lineHeight: 18
-  }
+    container: {
+      paddingHorizontal: 32,
+      paddingTop: 48,
+      paddingBottom: 40,
+      gap: 36
+    },
+    heading: {
+      color: c.textDark,
+      fontSize: 32,
+      fontWeight: '700',
+      letterSpacing: -0.8
+    },
+    toast: {
+      position: 'absolute',
+      bottom: 32,
+      alignSelf: 'center',
+      backgroundColor: c.primary,
+      paddingVertical: 8,
+      paddingHorizontal: 20,
+      borderRadius: 999,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      elevation: 3
+    },
+    toastText: {
+      color: c.textOnPrimary,
+      fontSize: 13,
+      fontWeight: '600',
+      letterSpacing: 0.3
+    },
+    section: {
+      gap: 16
+    },
+    sectionTitle: {
+      color: c.textDark,
+      fontSize: 20,
+      fontWeight: '700',
+      letterSpacing: -0.4
+    },
+    group: {
+      gap: 24
+    },
+    row: {
+      flexDirection: 'row',
+      gap: 8,
+      flexWrap: 'wrap'
+    },
+    pill: {
+      width: 72,
+      paddingVertical: 14,
+      borderRadius: 16,
+      backgroundColor: c.bgCard,
+      alignItems: 'center'
+    },
+    pillActive: {
+      backgroundColor: c.primary
+    },
+    pillText: {
+      color: c.pillText,
+      fontSize: 20,
+      fontWeight: '600'
+    },
+    pillTextActive: {
+      color: c.textOnPrimary
+    },
+    pillWide: {
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+      borderRadius: 16,
+      backgroundColor: c.bgCard,
+      alignItems: 'center' as const
+    },
+    tagPill: {
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 12,
+      backgroundColor: c.bgCard,
+      alignItems: 'center',
+      minWidth: 56
+    },
+    tagPillText: {
+      color: c.pillText,
+      fontSize: 14,
+      fontWeight: '600'
+    },
+    optionList: {
+      borderRadius: 14,
+      overflow: 'hidden',
+      backgroundColor: c.bgList
+    },
+    optionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 13,
+      paddingHorizontal: 16
+    },
+    optionRowBorder: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border
+    },
+    optionText: {
+      color: c.textBody,
+      fontSize: 15,
+      fontWeight: '500'
+    },
+    optionTextActive: {
+      color: c.primary,
+      fontWeight: '600'
+    },
+    optionDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      borderWidth: 1.5,
+      borderColor: c.dot
+    },
+    optionDotActive: {
+      backgroundColor: c.primary,
+      borderColor: c.primary
+    },
+    timeDisplay: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: c.bgList,
+      borderRadius: 14,
+      marginTop: 4
+    },
+    timeDisplayText: {
+      color: c.textDark,
+      fontSize: 17,
+      fontWeight: '600'
+    },
+    timeDisplayHint: {
+      color: c.textMuted,
+      fontSize: 20
+    },
+    paceRow: {
+      flexDirection: 'row',
+      gap: 12
+    },
+    paceItem: {
+      flex: 1,
+      gap: 8
+    },
+    holdLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5
+    },
+    holdInfoBtn: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 1.5,
+      borderColor: c.textFaint,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    holdInfoIcon: {
+      color: c.textFaint,
+      fontSize: 8,
+      fontWeight: '700',
+      lineHeight: 10
+    },
+    holdInfoSheet: {
+      backgroundColor: c.bg,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingTop: 12,
+      paddingBottom: 36,
+      paddingHorizontal: 24
+    },
+    holdInfoHeading: {
+      color: c.textDark,
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 12
+    },
+    holdInfoBody: {
+      color: c.textBody,
+      fontSize: 15,
+      lineHeight: 24,
+      marginBottom: 24
+    },
+    paceLabel: {
+      color: c.textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.8,
+      textTransform: 'uppercase'
+    },
+    pickerWrapper: {
+      backgroundColor: c.bgList,
+      borderRadius: 14,
+      overflow: 'hidden'
+    },
+    pickerWrapperIos: {
+      height: 160
+    },
+    selectorField: {
+      backgroundColor: c.bgList,
+      borderRadius: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    },
+    selectorValue: {
+      color: c.textDark,
+      fontSize: 16,
+      fontWeight: '500'
+    },
+    selectorChevron: {
+      color: c.textMuted,
+      fontSize: 20,
+      transform: [{ rotate: '90deg' }]
+    },
+    modalOuter: {
+      flex: 1,
+      justifyContent: 'flex-end'
+    },
+    modalBackdrop: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: c.modalOverlay
+    },
+    modalSheet: {
+      backgroundColor: c.bg,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingTop: 12,
+      paddingBottom: 36,
+      paddingHorizontal: 16
+    },
+    modalHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.dot,
+      alignSelf: 'center',
+      marginBottom: 16
+    },
+    modalScroll: {
+      maxHeight: 380
+    },
+    modalOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 15,
+      paddingHorizontal: 16
+    },
+    modalOptionBorder: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border
+    },
+    modalOptionText: {
+      color: c.textBody,
+      fontSize: 16,
+      fontWeight: '500'
+    },
+    modalOptionTextSelected: {
+      color: c.primary,
+      fontWeight: '600'
+    },
+    modalOptionDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: c.primary
+    },
+    modalCancelBtn: {
+      marginTop: 8,
+      paddingVertical: 16,
+      alignItems: 'center',
+      backgroundColor: c.bgList,
+      borderRadius: 14
+    },
+    modalCancelText: {
+      color: c.textBody,
+      fontSize: 15,
+      fontWeight: '600'
+    },
+    quietTimeRow: {
+      flexDirection: 'row',
+      gap: 12
+    },
+    quietTimeItem: {
+      flex: 1,
+      gap: 8
+    },
+    quietHint: {
+      color: c.textMuted,
+      fontSize: 13,
+      lineHeight: 18
+    },
+    presetsRow: {
+      flexDirection: 'row' as const,
+      gap: 10
+    },
+    presetCard: {
+      flex: 1,
+      paddingVertical: 18,
+      paddingHorizontal: 12,
+      borderRadius: 18,
+      backgroundColor: c.bgCard,
+      alignItems: 'center' as const,
+      gap: 6
+    },
+    presetCardActive: {
+      backgroundColor: c.primary
+    },
+    presetName: {
+      color: c.textDark,
+      fontSize: 15,
+      fontWeight: '600' as const
+    },
+    presetNameActive: {
+      color: c.textOnPrimary
+    },
+    presetPattern: {
+      color: c.textMuted,
+      fontSize: 11,
+      fontWeight: '500' as const
+    },
+    presetPatternActive: {
+      color: c.textOnPrimary,
+      opacity: 0.8
+    }
   })
 }
