@@ -9,6 +9,11 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 
 const TICK_MS = 1000
 
+function todayISO(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -22,7 +27,7 @@ export default function HomeScreen() {
   const router = useRouter()
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [isSessionComplete, setIsSessionComplete] = useState(false)
-  const [completedSessions, setCompletedSessions] = useState(0)
+  const [sessionsToday, setSessionsToday] = useState(0)
   const [totalCycles, setTotalCycles] = useState<number>(3)
   const [inhaleDuration, setInhaleDuration] = useState<number>(4)
   const [exhaleDuration, setExhaleDuration] = useState<number>(6)
@@ -37,16 +42,18 @@ export default function HomeScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [breaths, sessions, inhale, exhale, haptics] = await Promise.all([
+        const [breaths, log, inhale, exhale, haptics] = await Promise.all([
           AsyncStorage.getItem('anchor:totalCycles'),
-          AsyncStorage.getItem('anchor:completedSessions'),
+          AsyncStorage.getItem('anchor:sessionsLog'),
           AsyncStorage.getItem('anchor:inhaleDuration'),
           AsyncStorage.getItem('anchor:exhaleDuration'),
           AsyncStorage.getItem('anchor:haptics')
         ])
         const pb = breaths ? parseInt(breaths, 10) : null
         if (pb !== null && pb >= 1 && pb <= 20) setTotalCycles(pb)
-        if (sessions !== null) setCompletedSessions(parseInt(sessions, 10))
+        const parsed: string[] = log ? JSON.parse(log) : []
+        const today = todayISO()
+        setSessionsToday(parsed.filter((d) => d === today).length)
         const pi = inhale ? parseInt(inhale, 10) : null
         if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
         const pe = exhale ? parseInt(exhale, 10) : null
@@ -80,14 +87,6 @@ export default function HomeScreen() {
     }, [])
   )
 
-  useEffect(() => {
-    if (!isLoaded.current) return
-    AsyncStorage.setItem(
-      'anchor:completedSessions',
-      String(completedSessions)
-    ).catch(() => {})
-  }, [completedSessions])
-
   const resetSession = () => {
     circleAnim.stopAnimation()
     circleAnim.setValue(0)
@@ -107,13 +106,20 @@ export default function HomeScreen() {
     setIsSessionActive(false)
   }
 
-  const completeSession = () => {
+  const completeSession = async () => {
     if (hapticsEnabled)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     resetSession()
     setIsSessionActive(false)
-    setCompletedSessions((prev) => prev + 1)
     setIsSessionComplete(true)
+    try {
+      const today = todayISO()
+      const raw = await AsyncStorage.getItem('anchor:sessionsLog')
+      const log: string[] = raw ? JSON.parse(raw) : []
+      log.push(today)
+      await AsyncStorage.setItem('anchor:sessionsLog', JSON.stringify(log))
+      setSessionsToday(log.filter((d) => d === today).length)
+    } catch {}
   }
 
   useEffect(() => {
@@ -215,8 +221,7 @@ export default function HomeScreen() {
           </View>
 
           <Text style={styles.sessionBadge}>
-            {completedSessions}{' '}
-            {completedSessions === 1 ? 'session' : 'sessions'} today
+            {sessionsToday} {sessionsToday === 1 ? 'session' : 'sessions'} today
           </Text>
 
           <View style={styles.actions}>
@@ -250,10 +255,10 @@ export default function HomeScreen() {
 
           <PrimaryButton label="Start breathing" onPress={startSession} />
 
-          {completedSessions > 0 && (
+          {sessionsToday > 0 && (
             <Text style={styles.sessionBadge}>
-              {completedSessions}{' '}
-              {completedSessions === 1 ? 'session' : 'sessions'} today
+              {sessionsToday} {sessionsToday === 1 ? 'session' : 'sessions'}{' '}
+              today
             </Text>
           )}
         </View>

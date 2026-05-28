@@ -5,14 +5,23 @@ import { useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
+function todayISO(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function StatsScreen() {
-  const [completedSessions, setCompletedSessions] = useState(0)
+  const [sessionsToday, setSessionsToday] = useState(0)
+  const [sessionsTotal, setSessionsTotal] = useState(0)
 
   useFocusEffect(
     useCallback(() => {
-      AsyncStorage.getItem('anchor:completedSessions')
-        .then((v) => {
-          if (v !== null) setCompletedSessions(parseInt(v, 10))
+      AsyncStorage.getItem('anchor:sessionsLog')
+        .then((raw) => {
+          const log: string[] = raw ? JSON.parse(raw) : []
+          const today = todayISO()
+          setSessionsToday(log.filter((d) => d === today).length)
+          setSessionsTotal(log.length)
         })
         .catch(() => {})
     }, [])
@@ -24,9 +33,16 @@ export default function StatsScreen() {
         <Text style={styles.heading}>Stats</Text>
 
         <Card>
-          <Text style={styles.number}>{completedSessions}</Text>
+          <Text style={styles.number}>{sessionsToday}</Text>
           <Text style={styles.label}>
-            {completedSessions === 1 ? 'session' : 'sessions'} today
+            {sessionsToday === 1 ? 'session' : 'sessions'} today
+          </Text>
+        </Card>
+
+        <Card>
+          <Text style={styles.number}>{sessionsTotal}</Text>
+          <Text style={styles.label}>
+            {sessionsTotal === 1 ? 'session' : 'sessions'} total
           </Text>
         </Card>
 
