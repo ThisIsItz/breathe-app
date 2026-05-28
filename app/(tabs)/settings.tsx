@@ -6,8 +6,9 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker'
 import { Picker } from '@react-native-picker/picker'
 import * as Notifications from 'expo-notifications'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  Animated,
   Platform,
   Pressable,
   ScrollView,
@@ -98,6 +99,8 @@ export default function SettingsScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false)
 
   const isLoaded = useRef(false)
+  const savedOpacityAnim = useRef(new Animated.Value(0)).current
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -183,6 +186,27 @@ export default function SettingsScreen() {
       () => {}
     )
   }, [dailyMinute])
+
+  const flashSaved = useCallback(() => {
+    if (savedTimer.current) clearTimeout(savedTimer.current)
+    Animated.timing(savedOpacityAnim, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true
+    }).start()
+    savedTimer.current = setTimeout(() => {
+      Animated.timing(savedOpacityAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true
+      }).start()
+    }, 1200)
+  }, [savedOpacityAnim])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    flashSaved()
+  }, [totalCycles, inhaleDuration, exhaleDuration, hapticsEnabled, reminderMode, dailyHour, dailyMinute, flashSaved])
 
   const handleReminderChange = (mode: ReminderMode) => {
     setReminderMode(mode)
@@ -426,6 +450,12 @@ export default function SettingsScreen() {
           </View>
         </View>
       </ScrollView>
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.toast, { opacity: savedOpacityAnim }]}
+      >
+        <Text style={styles.toastText}>Saved</Text>
+      </Animated.View>
     </Screen>
   )
 }
@@ -442,6 +472,26 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     letterSpacing: -0.8
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 32,
+    alignSelf: 'center',
+    backgroundColor: '#2E5E4E',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3
+  },
+  toastText: {
+    color: '#F8F6F2',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.3
   },
   section: {
     gap: 16
