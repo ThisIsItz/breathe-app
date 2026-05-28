@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/hooks/use-app-theme'
 import { Pressable, StyleSheet, Text } from 'react-native'
 
 type Props = {
@@ -7,15 +8,20 @@ type Props = {
 }
 
 export function PrimaryButton({ label, onPress, variant = 'primary' }: Props) {
+  const c = useAppTheme()
   return (
     <Pressable
-      style={variant === 'primary' ? styles.primary : styles.secondary}
+      style={[
+        variant === 'primary' ? styles.primary : styles.secondary,
+        { backgroundColor: variant === 'primary' ? c.primary : c.bgCard }
+      ]}
       onPress={onPress}
     >
       <Text
-        style={
-          variant === 'primary' ? styles.primaryText : styles.secondaryText
-        }
+        style={[
+          variant === 'primary' ? styles.primaryText : styles.secondaryText,
+          { color: variant === 'primary' ? c.textOnPrimary : c.pillText }
+        ]}
       >
         {label}
       </Text>
@@ -25,26 +31,22 @@ export function PrimaryButton({ label, onPress, variant = 'primary' }: Props) {
 
 const styles = StyleSheet.create({
   primary: {
-    backgroundColor: '#2E5E4E',
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderRadius: 999,
     alignItems: 'center'
   },
   primaryText: {
-    color: '#F8F6F2',
     fontSize: 17,
     fontWeight: '600'
   },
   secondary: {
-    backgroundColor: '#E5E0D7',
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderRadius: 999,
     alignItems: 'center'
   },
   secondaryText: {
-    color: '#3A4942',
     fontSize: 17,
     fontWeight: '600'
   }

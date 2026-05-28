@@ -1,5 +1,6 @@
 import { PrimaryButton } from '@/components/primary-button'
 import { Screen } from '@/components/screen'
+import { useAppTheme } from '@/hooks/use-app-theme'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
 import * as Notifications from 'expo-notifications'
@@ -24,6 +25,8 @@ Notifications.setNotificationHandler({
 })
 
 export default function HomeScreen() {
+  const c = useAppTheme()
+  const styles = makeStyles(c)
   const router = useRouter()
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [isSessionComplete, setIsSessionComplete] = useState(false)
@@ -296,152 +299,154 @@ export default function HomeScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  homeContainer: {
-    flex: 1,
-    paddingHorizontal: 32,
-    paddingVertical: 48,
-    gap: 36,
-    justifyContent: 'center'
-  },
-  title: {
-    color: '#1F2A24',
-    fontSize: 44,
-    fontWeight: '700',
-    letterSpacing: -1,
-    lineHeight: 50,
-    marginBottom: 8
-  },
-  subtitle: {
-    color: '#55635C',
-    fontSize: 17,
-    lineHeight: 26
-  },
-  section: {
-    gap: 8
-  },
-  completionHeading: {
-    color: '#1F2A24',
-    fontSize: 36,
-    fontWeight: '700',
-    letterSpacing: -0.6,
-    lineHeight: 42
-  },
-  settingsCard: {
-    backgroundColor: '#E5E0D7',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    gap: 2,
-    alignSelf: 'flex-start'
-  },
-  settingsCardLine: {
-    color: '#55635C',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20
-  },
-  settingsCardHint: {
-    color: '#9AA49E',
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 6
-  },
-  sessionBadge: {
-    color: '#9AA49E',
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.3
-  },
-  actions: {
-    gap: 12
-  },
+function makeStyles(c: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
+    homeContainer: {
+      flex: 1,
+      paddingHorizontal: 32,
+      paddingVertical: 48,
+      gap: 36,
+      justifyContent: 'center'
+    },
+    title: {
+      color: c.textDark,
+      fontSize: 44,
+      fontWeight: '700',
+      letterSpacing: -1,
+      lineHeight: 50,
+      marginBottom: 8
+    },
+    subtitle: {
+      color: c.textBody,
+      fontSize: 17,
+      lineHeight: 26
+    },
+    section: {
+      gap: 8
+    },
+    completionHeading: {
+      color: c.textDark,
+      fontSize: 36,
+      fontWeight: '700',
+      letterSpacing: -0.6,
+      lineHeight: 42
+    },
+    settingsCard: {
+      backgroundColor: c.bgCard,
+      borderRadius: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 18,
+      gap: 2,
+      alignSelf: 'flex-start'
+    },
+    settingsCardLine: {
+      color: c.textBody,
+      fontSize: 14,
+      fontWeight: '500',
+      lineHeight: 20
+    },
+    settingsCardHint: {
+      color: c.textMuted,
+      fontSize: 12,
+      fontWeight: '500',
+      marginTop: 6
+    },
+    sessionBadge: {
+      color: c.textMuted,
+      fontSize: 13,
+      fontWeight: '500',
+      letterSpacing: 0.3
+    },
+    actions: {
+      gap: 12
+    },
 
-  sessionContainer: {
-    flex: 1,
-    paddingHorizontal: 32,
-    paddingBottom: 40,
-    paddingTop: 16,
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  sessionTitle: {
-    alignSelf: 'flex-start',
-    color: '#1F2A24',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3
-  },
-  circleArea: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  circleWrapper: {
-    width: 340,
-    height: 340,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  circleOuter: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 340,
-    height: 340,
-    borderRadius: 170,
-    backgroundColor: '#2E5E4E',
-    opacity: 0.07
-  },
-  circleInnerGuide: {
-    position: 'absolute',
-    top: 90,
-    left: 90,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: '#2E5E4E',
-    opacity: 0.13
-  },
-  circle: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: '#2E5E4E',
-    opacity: 0.2
-  },
-  sessionInfo: {
-    alignItems: 'center',
-    gap: 2,
-    marginBottom: 28
-  },
-  phaseText: {
-    color: '#55635C',
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase'
-  },
-  countText: {
-    color: '#1F2A24',
-    fontSize: 64,
-    fontWeight: '700',
-    lineHeight: 72
-  },
-  progressDots: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 32
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4
-  },
-  dotActive: {
-    backgroundColor: '#2E5E4E'
-  },
-  dotInactive: {
-    backgroundColor: '#C8C2B8'
-  }
-})
+    sessionContainer: {
+      flex: 1,
+      paddingHorizontal: 32,
+      paddingBottom: 40,
+      paddingTop: 16,
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    },
+    sessionTitle: {
+      alignSelf: 'flex-start',
+      color: c.textDark,
+      fontSize: 18,
+      fontWeight: '700',
+      letterSpacing: -0.3
+    },
+    circleArea: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    circleWrapper: {
+      width: 340,
+      height: 340,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    circleOuter: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: 340,
+      height: 340,
+      borderRadius: 170,
+      backgroundColor: c.primary,
+      opacity: c.circleOpacityOuter
+    },
+    circleInnerGuide: {
+      position: 'absolute',
+      top: 90,
+      left: 90,
+      width: 160,
+      height: 160,
+      borderRadius: 80,
+      backgroundColor: c.primary,
+      opacity: c.circleOpacityInner
+    },
+    circle: {
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      backgroundColor: c.primary,
+      opacity: c.circleOpacityMain
+    },
+    sessionInfo: {
+      alignItems: 'center',
+      gap: 2,
+      marginBottom: 28
+    },
+    phaseText: {
+      color: c.textBody,
+      fontSize: 18,
+      fontWeight: '500',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase'
+    },
+    countText: {
+      color: c.textDark,
+      fontSize: 64,
+      fontWeight: '700',
+      lineHeight: 72
+    },
+    progressDots: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 32
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4
+    },
+    dotActive: {
+      backgroundColor: c.primary
+    },
+    dotInactive: {
+      backgroundColor: c.dot
+    }
+  })
+}

@@ -1,5 +1,6 @@
 import { Card } from '@/components/card'
 import { Screen } from '@/components/screen'
+import { useAppTheme } from '@/hooks/use-app-theme'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
@@ -58,6 +59,8 @@ function buildWeekData(log: string[]): WeekDay[] {
 }
 
 export default function StatsScreen() {
+  const c = useAppTheme()
+  const styles = makeStyles(c)
   const [sessionsToday, setSessionsToday] = useState(0)
   const [sessionsThisWeek, setSessionsThisWeek] = useState(0)
   const [streak, setStreak] = useState(0)
@@ -166,134 +169,136 @@ export default function StatsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 40,
-    gap: 36
-  },
-  heading: {
-    color: '#1F2A24',
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -0.8
-  },
-  kpiRow: {
-    flexDirection: 'row',
-    gap: 10
-  },
-  kpiCard: {
-    flex: 1,
-    paddingVertical: 20,
-    paddingHorizontal: 8,
-    gap: 4
-  },
-  kpiNumber: {
-    color: '#1F2A24',
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    lineHeight: 38
-  },
-  kpiLabel: {
-    color: '#9AA49E',
-    fontSize: 11,
-    fontWeight: '500',
-    textAlign: 'center'
-  },
-  chartSection: {
-    gap: 14
-  },
-  sectionTitle: {
-    color: '#9AA49E',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase'
-  },
-  chart: {
-    backgroundColor: '#EDE8DF',
-    borderRadius: 20,
-    padding: 20,
-    paddingBottom: 16,
-    gap: 10
-  },
-  chartBody: {
-    flexDirection: 'row',
-    gap: 8
-  },
-  yAxis: {
-    width: 18,
-    height: BAR_MAX_HEIGHT,
-    justifyContent: 'space-between',
-    alignItems: 'flex-end'
-  },
-  yLabel: {
-    color: '#B8B2A8',
-    fontSize: 9,
-    fontWeight: '500',
-    lineHeight: 11
-  },
-  chartPlot: {
-    flex: 1,
-    height: BAR_MAX_HEIGHT
-  },
-  gridLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: '#D5CFC6'
-  },
-  barsRow: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row'
-  },
-  barColumn: {
-    flex: 1,
-    alignItems: 'center'
-  },
-  barValue: {
-    position: 'absolute',
-    color: '#55635C',
-    fontSize: 9,
-    fontWeight: '600',
-    width: '100%',
-    textAlign: 'center'
-  },
-  bar: {
-    position: 'absolute',
-    bottom: 0,
-    width: '60%',
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3
-  },
-  barToday: {
-    backgroundColor: '#2E5E4E'
-  },
-  barPast: {
-    backgroundColor: '#B8B2A8'
-  },
-  dayLabelsRow: {
-    flexDirection: 'row'
-  },
-  yAxisSpacer: {
-    width: 26
-  },
-  dayLabel: {
-    flex: 1,
-    color: '#9AA49E',
-    fontSize: 11,
-    fontWeight: '500',
-    textAlign: 'center'
-  },
-  dayLabelToday: {
-    color: '#2E5E4E',
-    fontWeight: '600'
-  }
-})
+function makeStyles(c: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
+    container: {
+      paddingHorizontal: 24,
+      paddingTop: 48,
+      paddingBottom: 40,
+      gap: 36
+    },
+    heading: {
+      color: c.textDark,
+      fontSize: 32,
+      fontWeight: '700',
+      letterSpacing: -0.8
+    },
+    kpiRow: {
+      flexDirection: 'row',
+      gap: 10
+    },
+    kpiCard: {
+      flex: 1,
+      paddingVertical: 20,
+      paddingHorizontal: 8,
+      gap: 4
+    },
+    kpiNumber: {
+      color: c.textDark,
+      fontSize: 32,
+      fontWeight: '700',
+      letterSpacing: -0.5,
+      lineHeight: 38
+    },
+    kpiLabel: {
+      color: c.textMuted,
+      fontSize: 11,
+      fontWeight: '500',
+      textAlign: 'center'
+    },
+    chartSection: {
+      gap: 14
+    },
+    sectionTitle: {
+      color: c.textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase'
+    },
+    chart: {
+      backgroundColor: c.bgList,
+      borderRadius: 20,
+      padding: 20,
+      paddingBottom: 16,
+      gap: 10
+    },
+    chartBody: {
+      flexDirection: 'row',
+      gap: 8
+    },
+    yAxis: {
+      width: 18,
+      height: BAR_MAX_HEIGHT,
+      justifyContent: 'space-between',
+      alignItems: 'flex-end'
+    },
+    yLabel: {
+      color: c.textFaint,
+      fontSize: 9,
+      fontWeight: '500',
+      lineHeight: 11
+    },
+    chartPlot: {
+      flex: 1,
+      height: BAR_MAX_HEIGHT
+    },
+    gridLine: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      height: 1,
+      backgroundColor: c.border
+    },
+    barsRow: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      flexDirection: 'row'
+    },
+    barColumn: {
+      flex: 1,
+      alignItems: 'center'
+    },
+    barValue: {
+      position: 'absolute',
+      color: c.textBody,
+      fontSize: 9,
+      fontWeight: '600',
+      width: '100%',
+      textAlign: 'center'
+    },
+    bar: {
+      position: 'absolute',
+      bottom: 0,
+      width: '60%',
+      borderTopLeftRadius: 3,
+      borderTopRightRadius: 3
+    },
+    barToday: {
+      backgroundColor: c.primary
+    },
+    barPast: {
+      backgroundColor: c.dot
+    },
+    dayLabelsRow: {
+      flexDirection: 'row'
+    },
+    yAxisSpacer: {
+      width: 26
+    },
+    dayLabel: {
+      flex: 1,
+      color: c.textMuted,
+      fontSize: 11,
+      fontWeight: '500',
+      textAlign: 'center'
+    },
+    dayLabelToday: {
+      color: c.primary,
+      fontWeight: '600'
+    }
+  })
+}

@@ -1,5 +1,6 @@
 import { Screen } from '@/components/screen'
 import { SettingRow } from '@/components/setting-row'
+import { useAppTheme } from '@/hooks/use-app-theme'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import DateTimePicker, {
   DateTimePickerEvent
@@ -186,6 +187,8 @@ function PickerSelector({
   options: SelectOption[]
   onValueChange: (value: number) => void
 }) {
+  const c = useAppTheme()
+  const styles = makeStyles(c)
   const [visible, setVisible] = useState(false)
   const currentLabel =
     options.find((o) => o.value === value)?.label ?? String(value)
@@ -257,6 +260,8 @@ function PickerSelector({
 }
 
 export default function SettingsScreen() {
+  const c = useAppTheme()
+  const styles = makeStyles(c)
   const [totalCycles, setTotalCycles] = useState<number>(3)
   const [inhaleDuration, setInhaleDuration] = useState<number>(4)
   const [holdDuration, setHoldDuration] = useState<number>(0)
@@ -945,7 +950,8 @@ export default function SettingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
   container: {
     paddingHorizontal: 32,
     paddingTop: 48,
@@ -953,7 +959,7 @@ const styles = StyleSheet.create({
     gap: 36
   },
   heading: {
-    color: '#1F2A24',
+    color: c.textDark,
     fontSize: 32,
     fontWeight: '700',
     letterSpacing: -0.8
@@ -962,7 +968,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 32,
     alignSelf: 'center',
-    backgroundColor: '#2E5E4E',
+    backgroundColor: c.primary,
     paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 999,
@@ -973,7 +979,7 @@ const styles = StyleSheet.create({
     elevation: 3
   },
   toastText: {
-    color: '#F8F6F2',
+    color: c.textOnPrimary,
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.3
@@ -982,7 +988,7 @@ const styles = StyleSheet.create({
     gap: 16
   },
   sectionTitle: {
-    color: '#1F2A24',
+    color: c.textDark,
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.4
@@ -999,44 +1005,44 @@ const styles = StyleSheet.create({
     width: 72,
     paddingVertical: 14,
     borderRadius: 16,
-    backgroundColor: '#E5E0D7',
+    backgroundColor: c.bgCard,
     alignItems: 'center'
   },
   pillActive: {
-    backgroundColor: '#2E5E4E'
+    backgroundColor: c.primary
   },
   pillText: {
-    color: '#3A4942',
+    color: c.pillText,
     fontSize: 20,
     fontWeight: '600'
   },
   pillTextActive: {
-    color: '#F8F6F2'
+    color: c.textOnPrimary
   },
   pillWide: {
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderRadius: 16,
-    backgroundColor: '#E5E0D7',
+    backgroundColor: c.bgCard,
     alignItems: 'center' as const
   },
   tagPill: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#E5E0D7',
+    backgroundColor: c.bgCard,
     alignItems: 'center',
     minWidth: 56
   },
   tagPillText: {
-    color: '#3A4942',
+    color: c.pillText,
     fontSize: 14,
     fontWeight: '600'
   },
   optionList: {
     borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: '#EDE8DF'
+    backgroundColor: c.bgList
   },
   optionRow: {
     flexDirection: 'row',
@@ -1047,15 +1053,15 @@ const styles = StyleSheet.create({
   },
   optionRowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#D5CFC6'
+    borderBottomColor: c.border
   },
   optionText: {
-    color: '#55635C',
+    color: c.textBody,
     fontSize: 15,
     fontWeight: '500'
   },
   optionTextActive: {
-    color: '#2E5E4E',
+    color: c.primary,
     fontWeight: '600'
   },
   optionDot: {
@@ -1063,11 +1069,11 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: '#C8C2B8'
+    borderColor: c.dot
   },
   optionDotActive: {
-    backgroundColor: '#2E5E4E',
-    borderColor: '#2E5E4E'
+    backgroundColor: c.primary,
+    borderColor: c.primary
   },
   timeDisplay: {
     flexDirection: 'row',
@@ -1075,17 +1081,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#EDE8DF',
+    backgroundColor: c.bgList,
     borderRadius: 14,
     marginTop: 4
   },
   timeDisplayText: {
-    color: '#1F2A24',
+    color: c.textDark,
     fontSize: 17,
     fontWeight: '600'
   },
   timeDisplayHint: {
-    color: '#9AA49E',
+    color: c.textMuted,
     fontSize: 20
   },
   paceRow: {
@@ -1106,18 +1112,18 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     borderWidth: 1.5,
-    borderColor: '#B8B2A8',
+    borderColor: c.textFaint,
     alignItems: 'center',
     justifyContent: 'center'
   },
   holdInfoIcon: {
-    color: '#B8B2A8',
+    color: c.textFaint,
     fontSize: 8,
     fontWeight: '700',
     lineHeight: 10
   },
   holdInfoSheet: {
-    backgroundColor: '#F5F1EA',
+    backgroundColor: c.bg,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 12,
@@ -1125,26 +1131,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24
   },
   holdInfoHeading: {
-    color: '#1F2A24',
+    color: c.textDark,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12
   },
   holdInfoBody: {
-    color: '#55635C',
+    color: c.textBody,
     fontSize: 15,
     lineHeight: 24,
     marginBottom: 24
   },
   paceLabel: {
-    color: '#9AA49E',
+    color: c.textMuted,
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.8,
     textTransform: 'uppercase'
   },
   pickerWrapper: {
-    backgroundColor: '#EDE8DF',
+    backgroundColor: c.bgList,
     borderRadius: 14,
     overflow: 'hidden'
   },
@@ -1152,7 +1158,7 @@ const styles = StyleSheet.create({
     height: 160
   },
   selectorField: {
-    backgroundColor: '#EDE8DF',
+    backgroundColor: c.bgList,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -1161,12 +1167,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   selectorValue: {
-    color: '#1F2A24',
+    color: c.textDark,
     fontSize: 16,
     fontWeight: '500'
   },
   selectorChevron: {
-    color: '#9AA49E',
+    color: c.textMuted,
     fontSize: 20,
     transform: [{ rotate: '90deg' }]
   },
@@ -1180,10 +1186,10 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: 'rgba(0,0,0,0.35)'
+    backgroundColor: c.modalOverlay
   },
   modalSheet: {
-    backgroundColor: '#F5F1EA',
+    backgroundColor: c.bg,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 12,
@@ -1194,7 +1200,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#C8C2B8',
+    backgroundColor: c.dot,
     alignSelf: 'center',
     marginBottom: 16
   },
@@ -1210,32 +1216,32 @@ const styles = StyleSheet.create({
   },
   modalOptionBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#D5CFC6'
+    borderBottomColor: c.border
   },
   modalOptionText: {
-    color: '#55635C',
+    color: c.textBody,
     fontSize: 16,
     fontWeight: '500'
   },
   modalOptionTextSelected: {
-    color: '#2E5E4E',
+    color: c.primary,
     fontWeight: '600'
   },
   modalOptionDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2E5E4E'
+    backgroundColor: c.primary
   },
   modalCancelBtn: {
     marginTop: 8,
     paddingVertical: 16,
     alignItems: 'center',
-    backgroundColor: '#EDE8DF',
+    backgroundColor: c.bgList,
     borderRadius: 14
   },
   modalCancelText: {
-    color: '#55635C',
+    color: c.textBody,
     fontSize: 15,
     fontWeight: '600'
   },
@@ -1248,8 +1254,9 @@ const styles = StyleSheet.create({
     gap: 8
   },
   quietHint: {
-    color: '#9AA49E',
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 18
   }
-})
+  })
+}

@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/hooks/use-app-theme'
 import { ReactNode } from 'react'
 import { StyleSheet, View, ViewStyle } from 'react-native'
 
@@ -7,12 +8,16 @@ type Props = {
 }
 
 export function Card({ children, style }: Props) {
-  return <View style={[styles.card, style]}>{children}</View>
+  const c = useAppTheme()
+  return (
+    <View style={[styles.card, { backgroundColor: c.bgCard }, style]}>
+      {children}
+    </View>
+  )
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#E5E0D7',
     borderRadius: 20,
     paddingVertical: 32,
     paddingHorizontal: 24,

@@ -1,6 +1,7 @@
+import { useAppTheme } from '@/hooks/use-app-theme'
 import { StatusBar } from 'expo-status-bar'
 import { ReactNode } from 'react'
-import { StyleSheet } from 'react-native'
+import { StyleSheet, useColorScheme } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 type Props = {
@@ -8,9 +9,11 @@ type Props = {
 }
 
 export function Screen({ children }: Props) {
+  const c = useAppTheme()
+  const colorScheme = useColorScheme()
   return (
-    <SafeAreaView style={styles.root}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       {children}
     </SafeAreaView>
   )
@@ -18,7 +21,6 @@ export function Screen({ children }: Props) {
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
-    backgroundColor: '#F5F1EA'
+    flex: 1
   }
 })
