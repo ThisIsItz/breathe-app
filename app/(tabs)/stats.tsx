@@ -80,6 +80,10 @@ export default function StatsScreen() {
   )
 
   const maxCount = Math.max(...weekData.map((d) => d.count), 1)
+  const rawMax = Math.max(maxCount, 2)
+  const maxDisplay = rawMax % 2 === 0 ? rawMax : rawMax + 1
+  const midDisplay = maxDisplay / 2
+  const scale = BAR_MAX_HEIGHT / maxDisplay
 
   return (
     <Screen>
@@ -107,26 +111,54 @@ export default function StatsScreen() {
         <View style={styles.chartSection}>
           <Text style={styles.sectionTitle}>Last 7 days</Text>
           <View style={styles.chart}>
-            {weekData.map(({ date, count, label, isToday }) => (
-              <View key={date} style={styles.barColumn}>
-                <View style={styles.barTrack}>
-                  {count > 0 && (
-                    <View
-                      style={[
-                        styles.bar,
-                        { height: (count / maxCount) * BAR_MAX_HEIGHT },
-                        isToday ? styles.barToday : styles.barPast
-                      ]}
-                    />
-                  )}
+            <View style={styles.chartBody}>
+              <View style={styles.yAxis}>
+                <Text style={styles.yLabel}>{maxDisplay}</Text>
+                <Text style={styles.yLabel}>{midDisplay}</Text>
+                <Text style={styles.yLabel}>0</Text>
+              </View>
+              <View style={styles.chartPlot}>
+                <View style={[styles.gridLine, { top: 0 }]} />
+                <View style={[styles.gridLine, { top: BAR_MAX_HEIGHT / 2 }]} />
+                <View style={[styles.gridLine, { bottom: 0 }]} />
+                <View style={styles.barsRow}>
+                  {weekData.map(({ date, count, isToday }) => (
+                    <View key={date} style={styles.barColumn}>
+                      {count > 0 && (
+                        <>
+                          <Text
+                            style={[
+                              styles.barValue,
+                              { bottom: count * scale + 4 }
+                            ]}
+                          >
+                            {count}
+                          </Text>
+                          <View
+                            style={[
+                              styles.bar,
+                              { height: count * scale },
+                              isToday ? styles.barToday : styles.barPast
+                            ]}
+                          />
+                        </>
+                      )}
+                    </View>
+                  ))}
                 </View>
+              </View>
+            </View>
+            <View style={styles.dayLabelsRow}>
+              <View style={styles.yAxisSpacer} />
+              {weekData.map(({ date, label, isToday }) => (
                 <Text
-                  style={[styles.barLabel, isToday && styles.barLabelToday]}
+                  key={date}
+                  style={[styles.dayLabel, isToday && styles.dayLabelToday]}
                 >
                   {label}
                 </Text>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -181,30 +213,65 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase'
   },
   chart: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 6,
     backgroundColor: '#EDE8DF',
     borderRadius: 20,
     padding: 20,
-    paddingBottom: 16
+    paddingBottom: 16,
+    gap: 10
+  },
+  chartBody: {
+    flexDirection: 'row',
+    gap: 8
+  },
+  yAxis: {
+    width: 18,
+    height: BAR_MAX_HEIGHT,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end'
+  },
+  yLabel: {
+    color: '#B8B2A8',
+    fontSize: 9,
+    fontWeight: '500',
+    lineHeight: 11
+  },
+  chartPlot: {
+    flex: 1,
+    height: BAR_MAX_HEIGHT
+  },
+  gridLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: '#D5CFC6'
+  },
+  barsRow: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row'
   },
   barColumn: {
     flex: 1,
-    alignItems: 'center',
-    gap: 8
+    alignItems: 'center'
   },
-  barTrack: {
+  barValue: {
+    position: 'absolute',
+    color: '#55635C',
+    fontSize: 9,
+    fontWeight: '600',
     width: '100%',
-    height: BAR_MAX_HEIGHT,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    borderRadius: 6
+    textAlign: 'center'
   },
   bar: {
-    width: '100%',
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4
+    position: 'absolute',
+    bottom: 0,
+    width: '60%',
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3
   },
   barToday: {
     backgroundColor: '#2E5E4E'
@@ -212,12 +279,20 @@ const styles = StyleSheet.create({
   barPast: {
     backgroundColor: '#B8B2A8'
   },
-  barLabel: {
+  dayLabelsRow: {
+    flexDirection: 'row'
+  },
+  yAxisSpacer: {
+    width: 26
+  },
+  dayLabel: {
+    flex: 1,
     color: '#9AA49E',
     fontSize: 11,
-    fontWeight: '500'
+    fontWeight: '500',
+    textAlign: 'center'
   },
-  barLabelToday: {
+  dayLabelToday: {
     color: '#2E5E4E',
     fontWeight: '600'
   }
