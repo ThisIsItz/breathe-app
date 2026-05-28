@@ -10,6 +10,17 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 
 const TICK_MS = 1000
 
+const COMPLETION_MESSAGES = [
+  { heading: 'Well done.', body: 'You took a moment\nfor yourself.' },
+  { heading: 'Welcome back.', body: 'That was a small act of care.' },
+  { heading: 'Still here.', body: 'A little more grounded.' },
+  { heading: 'You showed up.', body: 'That matters.' },
+  { heading: 'Gently done.', body: 'You made space for yourself.' },
+  { heading: 'A small pause.', body: 'It can change a lot.' },
+  { heading: "That's enough.", body: 'You gave yourself a moment of quiet.' },
+  { heading: 'Nice work.', body: 'The world can wait a little longer.' }
+] as const
+
 function todayISO(): string {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -39,6 +50,9 @@ export default function HomeScreen() {
   const [cycleCount, setCycleCount] = useState(1)
   const [phaseCount, setPhaseCount] = useState(1)
   const [phase, setPhase] = useState<'Inhale' | 'Hold' | 'Exhale'>('Inhale')
+  const [completionMessage, setCompletionMessage] = useState<
+    (typeof COMPLETION_MESSAGES)[number]
+  >(COMPLETION_MESSAGES[0])
 
   const circleAnim = useRef(new Animated.Value(0)).current
   const [isFinishing, setIsFinishing] = useState(false)
@@ -129,6 +143,11 @@ export default function HomeScreen() {
     resetSession()
     setIsSessionActive(false)
     setIsFinishing(true)
+    setCompletionMessage(
+      COMPLETION_MESSAGES[
+        Math.floor(Math.random() * COMPLETION_MESSAGES.length)
+      ]
+    )
     finishFade.setValue(1)
     completionFade.setValue(0)
     try {
@@ -277,10 +296,10 @@ export default function HomeScreen() {
           <Text style={styles.title}>Anchor</Text>
 
           <View style={styles.section}>
-            <Text style={styles.completionHeading}>Well done.</Text>
-            <Text style={styles.subtitle}>
-              You took a moment{`\n`}for yourself.
+            <Text style={styles.completionHeading}>
+              {completionMessage.heading}
             </Text>
+            <Text style={styles.subtitle}>{completionMessage.body}</Text>
           </View>
 
           <Text style={styles.sessionBadge}>
