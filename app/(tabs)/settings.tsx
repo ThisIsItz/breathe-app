@@ -4,11 +4,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import DateTimePicker, {
   DateTimePickerEvent
 } from '@react-native-community/datetimepicker'
-import { Picker } from '@react-native-picker/picker'
 import * as Notifications from 'expo-notifications'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Animated,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -22,6 +22,10 @@ const CUSTOM_RANGE = Array.from({ length: 20 }, (_, i) => i + 1)
 
 const INHALE_RANGE = Array.from({ length: 10 }, (_, i) => i + 1)
 const EXHALE_RANGE = Array.from({ length: 15 }, (_, i) => i + 1)
+
+const INHALE_OPTIONS = INHALE_RANGE.map((n) => ({ label: `${n}s`, value: n }))
+const EXHALE_OPTIONS = EXHALE_RANGE.map((n) => ({ label: `${n}s`, value: n }))
+const CUSTOM_OPTIONS = CUSTOM_RANGE.map((n) => ({ label: `${n}`, value: n }))
 
 type ReminderMode = 'off' | '1h' | '2h' | '4h' | 'daily'
 
@@ -86,6 +90,87 @@ async function applyReminder(
       }
     })
   }
+}
+
+type SelectOption = { label: string; value: number }
+
+function PickerSelector({
+  value,
+  options,
+  onValueChange
+}: {
+  value: number
+  options: SelectOption[]
+  onValueChange: (value: number) => void
+}) {
+  const [visible, setVisible] = useState(false)
+  const currentLabel =
+    options.find((o) => o.value === value)?.label ?? String(value)
+
+  const select = (v: number) => {
+    onValueChange(v)
+    setVisible(false)
+  }
+
+  return (
+    <>
+      <Pressable style={styles.selectorField} onPress={() => setVisible(true)}>
+        <Text style={styles.selectorValue}>{currentLabel}</Text>
+        <Text style={styles.selectorChevron}>{'\u25be'}</Text>
+      </Pressable>
+
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setVisible(false)}
+      >
+        <View style={styles.modalOuter}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setVisible(false)}
+          />
+          <Pressable style={styles.modalSheet} onPress={() => {}}>
+            <View style={styles.modalHandle} />
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              style={styles.modalScroll}
+            >
+              {options.map((opt, i) => (
+                <Pressable
+                  key={opt.value}
+                  style={[
+                    styles.modalOption,
+                    i < options.length - 1 && styles.modalOptionBorder
+                  ]}
+                  onPress={() => select(opt.value)}
+                >
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      opt.value === value && styles.modalOptionTextSelected
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                  {opt.value === value && (
+                    <View style={styles.modalOptionDot} />
+                  )}
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable
+              style={styles.modalCancelBtn}
+              onPress={() => setVisible(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </View>
+      </Modal>
+    </>
+  )
 }
 
 export default function SettingsScreen() {
@@ -206,7 +291,16 @@ export default function SettingsScreen() {
   useEffect(() => {
     if (!isLoaded.current) return
     flashSaved()
-  }, [totalCycles, inhaleDuration, exhaleDuration, hapticsEnabled, reminderMode, dailyHour, dailyMinute, flashSaved])
+  }, [
+    totalCycles,
+    inhaleDuration,
+    exhaleDuration,
+    hapticsEnabled,
+    reminderMode,
+    dailyHour,
+    dailyMinute,
+    flashSaved
+  ])
 
   const handleReminderChange = (mode: ReminderMode) => {
     setReminderMode(mode)
@@ -276,81 +370,30 @@ export default function SettingsScreen() {
                 </Pressable>
               </View>
               {isCustom && (
-                <View
-                  style={[
-                    styles.pickerWrapper,
-                    Platform.OS === 'ios' && styles.pickerWrapperIos
-                  ]}
-                >
-                  <Picker
-                    selectedValue={totalCycles}
-                    onValueChange={(v: number) => setTotalCycles(v)}
-                    style={styles.picker}
-                    dropdownIconColor="#55635C"
-                  >
-                    {CUSTOM_RANGE.map((n) => (
-                      <Picker.Item
-                        key={n}
-                        label={`${n}`}
-                        value={n}
-                        color="#1F2A24"
-                      />
-                    ))}
-                  </Picker>
-                </View>
+                <PickerSelector
+                  value={totalCycles}
+                  options={CUSTOM_OPTIONS}
+                  onValueChange={setTotalCycles}
+                />
               )}
             </SettingRow>
 
             <View style={styles.paceRow}>
               <View style={styles.paceItem}>
                 <Text style={styles.paceLabel}>Inhale</Text>
-                <View
-                  style={[
-                    styles.pickerWrapper,
-                    Platform.OS === 'ios' && styles.pickerWrapperIos
-                  ]}
-                >
-                  <Picker
-                    selectedValue={inhaleDuration}
-                    onValueChange={(v: number) => setInhaleDuration(v)}
-                    style={styles.picker}
-                    dropdownIconColor="#55635C"
-                  >
-                    {INHALE_RANGE.map((n) => (
-                      <Picker.Item
-                        key={n}
-                        label={`${n}s`}
-                        value={n}
-                        color="#1F2A24"
-                      />
-                    ))}
-                  </Picker>
-                </View>
+                <PickerSelector
+                  value={inhaleDuration}
+                  options={INHALE_OPTIONS}
+                  onValueChange={setInhaleDuration}
+                />
               </View>
               <View style={styles.paceItem}>
                 <Text style={styles.paceLabel}>Exhale</Text>
-                <View
-                  style={[
-                    styles.pickerWrapper,
-                    Platform.OS === 'ios' && styles.pickerWrapperIos
-                  ]}
-                >
-                  <Picker
-                    selectedValue={exhaleDuration}
-                    onValueChange={(v: number) => setExhaleDuration(v)}
-                    style={styles.picker}
-                    dropdownIconColor="#55635C"
-                  >
-                    {EXHALE_RANGE.map((n) => (
-                      <Picker.Item
-                        key={n}
-                        label={`${n}s`}
-                        value={n}
-                        color="#1F2A24"
-                      />
-                    ))}
-                  </Picker>
-                </View>
+                <PickerSelector
+                  value={exhaleDuration}
+                  options={EXHALE_OPTIONS}
+                  onValueChange={setExhaleDuration}
+                />
               </View>
             </View>
           </View>
@@ -626,7 +669,91 @@ const styles = StyleSheet.create({
   pickerWrapperIos: {
     height: 160
   },
-  picker: {
-    color: '#1F2A24'
+  selectorField: {
+    backgroundColor: '#EDE8DF',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  selectorValue: {
+    color: '#1F2A24',
+    fontSize: 16,
+    fontWeight: '500'
+  },
+  selectorChevron: {
+    color: '#9AA49E',
+    fontSize: 16
+  },
+  modalOuter: {
+    flex: 1,
+    justifyContent: 'flex-end'
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(0,0,0,0.35)'
+  },
+  modalSheet: {
+    backgroundColor: '#F5F1EA',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+    paddingBottom: 36,
+    paddingHorizontal: 16
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#C8C2B8',
+    alignSelf: 'center',
+    marginBottom: 16
+  },
+  modalScroll: {
+    maxHeight: 380
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    paddingHorizontal: 16
+  },
+  modalOptionBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#D5CFC6'
+  },
+  modalOptionText: {
+    color: '#55635C',
+    fontSize: 16,
+    fontWeight: '500'
+  },
+  modalOptionTextSelected: {
+    color: '#2E5E4E',
+    fontWeight: '600'
+  },
+  modalOptionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2E5E4E'
+  },
+  modalCancelBtn: {
+    marginTop: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+    backgroundColor: '#EDE8DF',
+    borderRadius: 14
+  },
+  modalCancelText: {
+    color: '#55635C',
+    fontSize: 15,
+    fontWeight: '600'
   }
 })
