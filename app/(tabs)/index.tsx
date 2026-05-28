@@ -1,4 +1,3 @@
-import { PrimaryButton } from '@/components/primary-button'
 import { Screen } from '@/components/screen'
 import { useAppTheme } from '@/hooks/use-app-theme'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -286,11 +285,13 @@ export default function HomeScreen() {
                 ))}
               </View>
 
-              <PrimaryButton
-                label="Cancel"
+              <Pressable
                 onPress={cancelSession}
-                variant="secondary"
-              />
+                hitSlop={12}
+                style={styles.cancelBtn}
+              >
+                <Text style={styles.cancelText}>cancel</Text>
+              </Pressable>
             </>
           )}
         </Animated.View>
@@ -300,56 +301,64 @@ export default function HomeScreen() {
         >
           <Text style={styles.title}>Anchor</Text>
 
-          <View style={styles.section}>
+          <View style={styles.completionContent}>
             <Text style={styles.completionHeading}>
               {completionMessage.heading}
             </Text>
-            <Text style={styles.subtitle}>{completionMessage.body}</Text>
+            <Text style={styles.completionBody}>{completionMessage.body}</Text>
           </View>
 
-          <Text style={styles.sessionBadge}>
-            {sessionsToday} {sessionsToday === 1 ? 'session' : 'sessions'} today
-          </Text>
-
-          <View style={styles.actions}>
-            <PrimaryButton label="Do another session" onPress={startSession} />
-            <PrimaryButton
-              label="Back home"
-              onPress={() => setIsSessionComplete(false)}
-              variant="secondary"
-            />
-          </View>
-        </Animated.View>
-      ) : (
-        <View style={styles.homeContainer}>
-          <View>
-            <Text style={styles.title}>Anchor</Text>
-            <Text style={styles.subtitle}>
-              A tiny pause to come back to yourself
-            </Text>
-          </View>
-
-          <Pressable
-            style={styles.settingsCard}
-            onPress={() => router.navigate('/settings')}
-          >
-            <Text style={styles.settingsCardLine}>{totalCycles} breaths</Text>
-            <Text style={styles.settingsCardLine}>
-              {inhaleDuration}s in
-              {holdDuration > 0 ? ` · ${holdDuration}s hold` : ''} ·{' '}
-              {exhaleDuration}s out
-            </Text>
-            <Text style={styles.settingsCardHint}>Tap to customize</Text>
-          </Pressable>
-
-          <PrimaryButton label="Start breathing" onPress={startSession} />
-
-          {sessionsToday > 0 && (
+          <View style={styles.completionFooter}>
             <Text style={styles.sessionBadge}>
               {sessionsToday} {sessionsToday === 1 ? 'session' : 'sessions'}{' '}
               today
             </Text>
-          )}
+            <View style={styles.completionActions}>
+              <Pressable onPress={startSession} hitSlop={12}>
+                <Text style={styles.completionActionLink}>Again</Text>
+              </Pressable>
+              <Text style={styles.completionActionDot}>·</Text>
+              <Pressable
+                onPress={() => setIsSessionComplete(false)}
+                hitSlop={12}
+              >
+                <Text style={styles.completionActionLink}>Done</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Animated.View>
+      ) : (
+        <View style={styles.homeContainer}>
+          <View style={styles.homeHeader}>
+            <Text style={styles.title}>Anchor</Text>
+            <Text style={styles.tagline}>
+              A tiny pause to come back to yourself.
+            </Text>
+          </View>
+
+          <Pressable
+            style={styles.settingsLink}
+            onPress={() => router.navigate('/settings')}
+          >
+            <Text style={styles.settingsText}>
+              {inhaleDuration}s in
+              {holdDuration > 0 ? ` · ${holdDuration}s hold` : ''} ·{' '}
+              {exhaleDuration}s out · {totalCycles} breaths
+            </Text>
+            <Text style={styles.settingsHint}>customize ›</Text>
+          </Pressable>
+
+          <View style={styles.startArea}>
+            <Pressable style={styles.startButton} onPress={startSession}>
+              <Text style={styles.startButtonText}>Begin</Text>
+            </Pressable>
+            {sessionsToday > 0 && (
+              <Text style={styles.sessionBadge}>
+                {sessionsToday} {sessionsToday === 1 ? 'session' : 'sessions'}{' '}
+                today
+              </Text>
+            )}
+          </View>
         </View>
       )}
     </Screen>
@@ -361,67 +370,107 @@ function makeStyles(c: ReturnType<typeof useAppTheme>) {
     homeContainer: {
       flex: 1,
       paddingHorizontal: 32,
-      paddingVertical: 48,
-      gap: 36,
-      justifyContent: 'center'
+      paddingTop: 60,
+      paddingBottom: 52,
+      justifyContent: 'space-between'
+    },
+    homeHeader: {
+      gap: 6
     },
     title: {
       color: c.textDark,
-      fontSize: 44,
-      fontWeight: '700',
-      letterSpacing: -1,
-      lineHeight: 50,
-      marginBottom: 8
+      fontSize: 28,
+      fontWeight: '600',
+      letterSpacing: -0.5
     },
-    subtitle: {
-      color: c.textBody,
-      fontSize: 17,
-      lineHeight: 26
-    },
-    section: {
-      gap: 8
-    },
-    completionHeading: {
-      color: c.textDark,
-      fontSize: 36,
-      fontWeight: '700',
-      letterSpacing: -0.6,
-      lineHeight: 42
-    },
-    settingsCard: {
-      backgroundColor: c.bgCard,
-      borderRadius: 16,
-      paddingVertical: 14,
-      paddingHorizontal: 18,
-      gap: 2,
-      alignSelf: 'flex-start'
-    },
-    settingsCardLine: {
-      color: c.textBody,
-      fontSize: 14,
-      fontWeight: '500',
-      lineHeight: 20
-    },
-    settingsCardHint: {
+    tagline: {
       color: c.textMuted,
-      fontSize: 12,
+      fontSize: 15,
+      lineHeight: 22
+    },
+    settingsLink: {
+      gap: 4
+    },
+    settingsText: {
+      color: c.textBody,
+      fontSize: 15,
       fontWeight: '500',
-      marginTop: 6
+      lineHeight: 22
+    },
+    settingsHint: {
+      color: c.textMuted,
+      fontSize: 13
+    },
+    startArea: {
+      alignItems: 'center',
+      gap: 16
+    },
+    startButton: {
+      backgroundColor: c.primary,
+      paddingVertical: 14,
+      paddingHorizontal: 44,
+      borderRadius: 999
+    },
+    startButtonText: {
+      color: c.textOnPrimary,
+      fontSize: 16,
+      fontWeight: '600',
+      letterSpacing: 0.2
     },
     sessionBadge: {
       color: c.textMuted,
       fontSize: 13,
       fontWeight: '500',
+      letterSpacing: 0.2,
+      textAlign: 'center'
+    },
+    completionContent: {
+      gap: 10
+    },
+    completionHeading: {
+      color: c.textDark,
+      fontSize: 30,
+      fontWeight: '600',
+      letterSpacing: -0.5,
+      lineHeight: 36
+    },
+    completionBody: {
+      color: c.textBody,
+      fontSize: 17,
+      lineHeight: 26
+    },
+    completionFooter: {
+      alignItems: 'center',
+      gap: 16
+    },
+    completionActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14
+    },
+    completionActionLink: {
+      color: c.textBody,
+      fontSize: 16,
+      fontWeight: '500'
+    },
+    completionActionDot: {
+      color: c.textFaint,
+      fontSize: 16
+    },
+    cancelBtn: {
+      paddingBottom: 8,
+      alignSelf: 'center'
+    },
+    cancelText: {
+      color: c.textMuted,
+      fontSize: 15,
+      fontWeight: '500',
       letterSpacing: 0.3
     },
-    actions: {
-      gap: 12
-    },
-
     sessionContainer: {
       flex: 1,
       paddingHorizontal: 32,
-      paddingBottom: 40,
+      paddingBottom: 52,
       paddingTop: 16,
       alignItems: 'center',
       justifyContent: 'space-between'
@@ -430,7 +479,7 @@ function makeStyles(c: ReturnType<typeof useAppTheme>) {
       alignSelf: 'flex-start',
       color: c.textDark,
       fontSize: 18,
-      fontWeight: '700',
+      fontWeight: '600',
       letterSpacing: -0.3
     },
     circleArea: {
