@@ -30,11 +30,12 @@ export default function HomeScreen() {
   const [sessionsToday, setSessionsToday] = useState(0)
   const [totalCycles, setTotalCycles] = useState<number>(3)
   const [inhaleDuration, setInhaleDuration] = useState<number>(4)
+  const [holdDuration, setHoldDuration] = useState<number>(0)
   const [exhaleDuration, setExhaleDuration] = useState<number>(6)
   const [hapticsEnabled, setHapticsEnabled] = useState(true)
   const [cycleCount, setCycleCount] = useState(1)
   const [phaseCount, setPhaseCount] = useState(1)
-  const [phase, setPhase] = useState<'Inhale' | 'Exhale'>('Inhale')
+  const [phase, setPhase] = useState<'Inhale' | 'Hold' | 'Exhale'>('Inhale')
 
   const circleAnim = useRef(new Animated.Value(0)).current
   const isLoaded = useRef(false)
@@ -42,10 +43,11 @@ export default function HomeScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [breaths, log, inhale, exhale, haptics] = await Promise.all([
+        const [breaths, log, inhale, hold, exhale, haptics] = await Promise.all([
           AsyncStorage.getItem('anchor:totalCycles'),
           AsyncStorage.getItem('anchor:sessionsLog'),
           AsyncStorage.getItem('anchor:inhaleDuration'),
+          AsyncStorage.getItem('anchor:holdDuration'),
           AsyncStorage.getItem('anchor:exhaleDuration'),
           AsyncStorage.getItem('anchor:haptics')
         ])
@@ -56,6 +58,8 @@ export default function HomeScreen() {
         setSessionsToday(parsed.filter((d) => d === today).length)
         const pi = inhale ? parseInt(inhale, 10) : null
         if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
+        const ph = hold ? parseInt(hold, 10) : null
+        if (ph !== null && ph >= 0 && ph <= 3) setHoldDuration(ph)
         const pe = exhale ? parseInt(exhale, 10) : null
         if (pe !== null && pe >= 1 && pe <= 15) setExhaleDuration(pe)
         if (haptics === 'false') setHapticsEnabled(false)
@@ -71,14 +75,17 @@ export default function HomeScreen() {
       Promise.all([
         AsyncStorage.getItem('anchor:totalCycles'),
         AsyncStorage.getItem('anchor:inhaleDuration'),
+        AsyncStorage.getItem('anchor:holdDuration'),
         AsyncStorage.getItem('anchor:exhaleDuration'),
         AsyncStorage.getItem('anchor:haptics')
       ])
-        .then(([breaths, inhale, exhale, haptics]) => {
+        .then(([breaths, inhale, hold, exhale, haptics]) => {
           const pb = breaths ? parseInt(breaths, 10) : null
           if (pb !== null && pb >= 1 && pb <= 20) setTotalCycles(pb)
           const pi = inhale ? parseInt(inhale, 10) : null
           if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
+          const ph = hold ? parseInt(hold, 10) : null
+          if (ph !== null && ph >= 0 && ph <= 3) setHoldDuration(ph)
           const pe = exhale ? parseInt(exhale, 10) : null
           if (pe !== null && pe >= 1 && pe <= 15) setExhaleDuration(pe)
           if (haptics !== null) setHapticsEnabled(haptics !== 'false')
@@ -128,7 +135,12 @@ export default function HomeScreen() {
     }
 
     const timer = setTimeout(() => {
-      const phaseTicks = phase === 'Inhale' ? inhaleDuration : exhaleDuration
+      const phaseTicks =
+        phase === 'Inhale'
+          ? inhaleDuration
+          : phase === 'Hold'
+            ? holdDuration
+            : exhaleDuration
 
       if (phaseCount < phaseTicks) {
         setPhaseCount((prev) => prev + 1)
@@ -136,6 +148,14 @@ export default function HomeScreen() {
       }
 
       if (phase === 'Inhale') {
+        if (hapticsEnabled)
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+        setPhase(holdDuration > 0 ? 'Hold' : 'Exhale')
+        setPhaseCount(1)
+        return
+      }
+
+      if (phase === 'Hold') {
         if (hapticsEnabled)
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
         setPhase('Exhale')
@@ -160,6 +180,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!isSessionActive) return
+    if (phase === 'Hold') return
 
     Animated.timing(circleAnim, {
       toValue: phase === 'Inhale' ? 1 : 0,
@@ -171,7 +192,7 @@ export default function HomeScreen() {
 
   const circleScale = circleAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.7]
+    outputRange: [0.8, 1.7]
   })
 
   return (
@@ -181,9 +202,13 @@ export default function HomeScreen() {
           <Text style={styles.sessionTitle}>Anchor</Text>
 
           <View style={styles.circleArea}>
-            <Animated.View
-              style={[styles.circle, { transform: [{ scale: circleScale }] }]}
-            />
+            <View style={styles.circleWrapper}>
+              <View style={styles.circleOuter} />
+              <Animated.View
+                style={[styles.circle, { transform: [{ scale: circleScale }] }]}
+              />
+              <View style={styles.circleInnerGuide} />
+            </View>
           </View>
 
           <View style={styles.sessionInfo}>
@@ -238,7 +263,7 @@ export default function HomeScreen() {
           <View>
             <Text style={styles.title}>Anchor</Text>
             <Text style={styles.subtitle}>
-              A tiny pause to come back{`\n`}to yourself
+              A tiny pause to come back to yourself
             </Text>
           </View>
 
@@ -248,7 +273,7 @@ export default function HomeScreen() {
           >
             <Text style={styles.settingsCardLine}>{totalCycles} breaths</Text>
             <Text style={styles.settingsCardLine}>
-              {inhaleDuration}s in · {exhaleDuration}s out
+              {inhaleDuration}s in{holdDuration > 0 ? ` · ${holdDuration}s hold` : ''} · {exhaleDuration}s out
             </Text>
             <Text style={styles.settingsCardHint}>Tap to customize</Text>
           </Pressable>
@@ -348,12 +373,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
+  circleWrapper: {
+    width: 340,
+    height: 340,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  circleOuter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    backgroundColor: '#2E5E4E',
+    opacity: 0.07
+  },
+  circleInnerGuide: {
+    position: 'absolute',
+    top: 90,
+    left: 90,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: '#2E5E4E',
+    opacity: 0.13
+  },
   circle: {
     width: 200,
     height: 200,
     borderRadius: 100,
     backgroundColor: '#2E5E4E',
-    opacity: 0.18
+    opacity: 0.20
   },
   sessionInfo: {
     alignItems: 'center',

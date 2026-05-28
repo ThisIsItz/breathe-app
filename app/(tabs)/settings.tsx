@@ -25,6 +25,7 @@ const EXHALE_RANGE = Array.from({ length: 15 }, (_, i) => i + 1)
 
 const INHALE_OPTIONS = INHALE_RANGE.map((n) => ({ label: `${n}s`, value: n }))
 const EXHALE_OPTIONS = EXHALE_RANGE.map((n) => ({ label: `${n}s`, value: n }))
+const HOLD_OPTIONS = [0, 1, 2, 3].map((n) => ({ label: n === 0 ? 'Off' : `${n}s`, value: n }))
 const CUSTOM_OPTIONS = CUSTOM_RANGE.map((n) => ({ label: `${n}`, value: n }))
 
 type ReminderMode = 'off' | '1h' | '2h' | '4h' | 'daily'
@@ -255,6 +256,7 @@ function PickerSelector({
 export default function SettingsScreen() {
   const [totalCycles, setTotalCycles] = useState<number>(3)
   const [inhaleDuration, setInhaleDuration] = useState<number>(4)
+  const [holdDuration, setHoldDuration] = useState<number>(0)
   const [exhaleDuration, setExhaleDuration] = useState<number>(6)
   const [hapticsEnabled, setHapticsEnabled] = useState(true)
   const [reminderMode, setReminderMode] = useState<ReminderMode>('off')
@@ -279,6 +281,7 @@ export default function SettingsScreen() {
         const [
           breaths,
           inhale,
+          hold,
           exhale,
           haptics,
           reminder,
@@ -292,6 +295,7 @@ export default function SettingsScreen() {
         ] = await Promise.all([
           AsyncStorage.getItem('anchor:totalCycles'),
           AsyncStorage.getItem('anchor:inhaleDuration'),
+          AsyncStorage.getItem('anchor:holdDuration'),
           AsyncStorage.getItem('anchor:exhaleDuration'),
           AsyncStorage.getItem('anchor:haptics'),
           AsyncStorage.getItem('anchor:reminderMode'),
@@ -307,6 +311,8 @@ export default function SettingsScreen() {
         if (pb !== null && pb >= 1 && pb <= 20) setTotalCycles(pb)
         const pi = inhale ? parseInt(inhale, 10) : null
         if (pi !== null && pi >= 1 && pi <= 10) setInhaleDuration(pi)
+        const ph2 = hold ? parseInt(hold, 10) : null
+        if (ph2 !== null && ph2 >= 0 && ph2 <= 3) setHoldDuration(ph2)
         const pe = exhale ? parseInt(exhale, 10) : null
         if (pe !== null && pe >= 1 && pe <= 15) setExhaleDuration(pe)
         if (haptics === 'false') setHapticsEnabled(false)
@@ -345,6 +351,13 @@ export default function SettingsScreen() {
       () => {}
     )
   }, [inhaleDuration])
+
+  useEffect(() => {
+    if (!isLoaded.current) return
+    AsyncStorage.setItem('anchor:holdDuration', String(holdDuration)).catch(
+      () => {}
+    )
+  }, [holdDuration])
 
   useEffect(() => {
     if (!isLoaded.current) return
@@ -435,6 +448,7 @@ export default function SettingsScreen() {
   }, [
     totalCycles,
     inhaleDuration,
+    holdDuration,
     exhaleDuration,
     hapticsEnabled,
     reminderMode,
@@ -613,6 +627,14 @@ export default function SettingsScreen() {
                   value={inhaleDuration}
                   options={INHALE_OPTIONS}
                   onValueChange={setInhaleDuration}
+                />
+              </View>
+              <View style={styles.paceItem}>
+                <Text style={styles.paceLabel}>Hold</Text>
+                <PickerSelector
+                  value={holdDuration}
+                  options={HOLD_OPTIONS}
+                  onValueChange={setHoldDuration}
                 />
               </View>
               <View style={styles.paceItem}>
