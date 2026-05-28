@@ -1,50 +1,94 @@
-# Welcome to your Expo app 👋
+# Anchor
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native breathing app for short grounding pauses.
 
-## Get started
+Instead of full meditation sessions, Anchor focuses on simple breathing cycles you can do anywhere: open the app, take a few intentional breaths, and continue your day.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Screenshots
 
-2. Start the app
+| Home                             | Session                                | Stats                              | Settings                                 |
+| -------------------------------- | -------------------------------------- | ---------------------------------- | ---------------------------------------- |
+| ![Home](/assets/readme/home.png) | ![Session](/assets/readme/session.png) | ![Stats](/assets/readme/stats.png) | ![Settings](/assets/readme/settings.png) |
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## Features
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **Guided breathing sessions** — inhale, hold, and exhale phases with a visual circle animation
+- **Fully customizable** — set your own inhale / hold / exhale durations and cycle count
+- **Breathing presets** — Relax, Focus, and Sleep presets for quick setup
+- **Weekly statistics** — track your sessions and total cycles, navigate back through past weeks
+- **Local reminders** — daily notification at a time you choose, with quiet hours support
+- **Haptic feedback** — subtle vibrations on each phase transition
+- **Dark mode** — fully themed for both light and dark system preferences
+- **No internet required** — all data stored locally on device
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## Why I built this
 
-When you're ready, run:
+Most breathing apps feel too complex, too long, or too gamified.
+
+I wanted something simpler: a small tool for taking a few intentional breaths whenever I need to come back to the present moment. Not a full meditation session, not a timer for minutes. Just 3 or 5 breaths that can be done anywhere, anytime.
+
+Open it, breathe, close it.
+
+---
+
+## Tech stack
+
+|                 |                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------ |
+| Framework       | [Expo](https://expo.dev) (SDK 54) with [expo-router](https://expo.github.io/router/) |
+| Language        | TypeScript                                                                           |
+| Storage         | AsyncStorage (local, no backend)                                                     |
+| Animations      | React Native `Animated` API                                                          |
+| Haptics         | `expo-haptics`                                                                       |
+| Notifications   | `expo-notifications`                                                                 |
+| Target platform | Android                                                                              |
+
+---
+
+## Running locally
+
+**Prerequisites:** Node.js, and either an Android emulator or a physical device with Expo Go.
 
 ```bash
-npm run reset-project
+# Install dependencies
+npm install
+
+# Start the dev server
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Then press `a` to open on Android, or scan the QR code with [Expo Go](https://expo.dev/go).
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## Installing the APK
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+> A release APK can be found in the [Releases](../../releases) section of this repository.
 
-## Join the community
+1. Download the `.apk` file to your Android device
+2. Open the file — Android will prompt you to allow installation from unknown sources if needed
+3. Install and open **Anchor**
 
-Join our community of developers creating universal apps.
+---
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Project structure
+
+```
+app/
+  (tabs)/
+    index.tsx      # Home + breathing session
+    stats.tsx      # Weekly statistics
+    settings.tsx   # Reminders, quiet hours, breathing config
+  _layout.tsx      # Root layout + theme
+  modal.tsx        # Modal screen
+components/        # Shared UI components
+constants/
+  theme.ts         # Color tokens (light + dark)
+hooks/             # useAppTheme, useColorScheme
+```
