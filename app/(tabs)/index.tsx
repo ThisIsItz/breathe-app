@@ -1,6 +1,7 @@
 import { Screen } from '@/components/screen'
 import { useAppTheme } from '@/hooks/use-app-theme'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useNavigation } from '@react-navigation/native'
 import * as Haptics from 'expo-haptics'
 import * as Notifications from 'expo-notifications'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -48,6 +49,7 @@ export default function HomeScreen() {
   const c = useAppTheme()
   const styles = makeStyles(c)
   const router = useRouter()
+  const navigation = useNavigation()
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [isSessionComplete, setIsSessionComplete] = useState(false)
   const [sessionsToday, setSessionsToday] = useState(0)
@@ -280,6 +282,20 @@ export default function HomeScreen() {
     inputRange: [0, 1],
     outputRange: [0.9, 1.1]
   })
+
+  useEffect(() => {
+    if (isSessionActive || isFinishing) {
+      navigation.setOptions({ tabBarStyle: { display: 'none' } })
+    } else {
+      navigation.setOptions({
+        tabBarStyle: {
+          backgroundColor: c.bg,
+          borderTopColor: c.borderTab,
+          borderTopWidth: 1
+        }
+      })
+    }
+  }, [isSessionActive, isFinishing])
 
   return (
     <Screen>
