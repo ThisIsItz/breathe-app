@@ -418,20 +418,23 @@ function makeStyles(c: ReturnType<typeof useAppTheme>) {
     homeOrbContainer: {
       alignItems: 'center'
     },
+    homeTop: {
+      gap: 32
+    },
     homeOrb: {
       width: 64,
       height: 64,
       borderRadius: 32,
       backgroundColor: c.primary,
-      opacity: c.circleOpacityInner
+      opacity: c.circleOpacityOrb
     },
     homeHeader: {
       gap: 6
     },
     title: {
       color: c.textDark,
-      fontSize: 28,
-      fontWeight: '600',
+      fontSize: 32,
+      fontWeight: '700',
       letterSpacing: -0.5
     },
     tagline: {

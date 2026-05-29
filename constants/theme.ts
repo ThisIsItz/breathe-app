@@ -45,7 +45,8 @@ export const AppColors = {
     modalOverlay: 'rgba(0,0,0,0.35)',
     circleOpacityOuter: 0.07,
     circleOpacityInner: 0.13,
-    circleOpacityMain: 0.2
+    circleOpacityMain: 0.2,
+    circleOpacityOrb: 0.5
   },
   dark: {
     bg: '#181F1D',
@@ -64,7 +65,8 @@ export const AppColors = {
     modalOverlay: 'rgba(0,0,0,0.55)',
     circleOpacityOuter: 0.18,
     circleOpacityInner: 0.32,
-    circleOpacityMain: 0.45
+    circleOpacityMain: 0.45,
+    circleOpacityOrb: 0.6
   }
 }
 
