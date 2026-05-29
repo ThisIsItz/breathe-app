@@ -9,6 +9,7 @@ import * as Notifications from 'expo-notifications'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Animated,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -971,6 +972,19 @@ export default function SettingsScreen() {
             )}
           </View>
         </View>
+
+        <View style={styles.supportSection}>
+          <Text style={styles.supportText}>
+            If Anchor helped you slow down for a moment, you can support the
+            project here.
+          </Text>
+          <Pressable
+            style={styles.supportButton}
+            onPress={() => Linking.openURL('https://ko-fi.com/thisisitz')}
+          >
+            <Text style={styles.supportButtonText}>Buy me a coffee ☕</Text>
+          </Pressable>
+        </View>
       </ScrollView>
       <Animated.View
         pointerEvents="none"
@@ -1351,6 +1365,28 @@ function makeStyles(c: ReturnType<typeof useAppTheme>) {
     presetPatternActive: {
       color: c.textOnPrimary,
       opacity: 0.8
+    },
+    supportSection: {
+      gap: 14,
+      paddingTop: 8
+    },
+    supportText: {
+      color: c.textFaint,
+      fontSize: 13,
+      lineHeight: 19
+    },
+    supportButton: {
+      alignSelf: 'flex-start',
+      paddingVertical: 10,
+      paddingHorizontal: 18,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.border
+    },
+    supportButtonText: {
+      color: c.textMuted,
+      fontSize: 13,
+      fontWeight: '500'
     }
   })
 }
