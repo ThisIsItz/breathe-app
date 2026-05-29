@@ -732,30 +732,6 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Experience</Text>
           <View style={styles.group}>
-            <SettingRow label="Haptics">
-              <View style={styles.row}>
-                {([true, false] as const).map((value) => (
-                  <Pressable
-                    key={String(value)}
-                    style={[
-                      styles.tagPill,
-                      hapticsEnabled === value && styles.pillActive
-                    ]}
-                    onPress={() => setHapticsEnabled(value)}
-                  >
-                    <Text
-                      style={[
-                        styles.tagPillText,
-                        hapticsEnabled === value && styles.pillTextActive
-                      ]}
-                    >
-                      {value ? 'On' : 'Off'}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </SettingRow>
-
             <SettingRow label="Reminder">
               <View style={styles.optionList}>
                 {REMINDER_OPTIONS.map(({ value, label }, i) => {
@@ -970,6 +946,34 @@ export default function SettingsScreen() {
                 )}
               </>
             )}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.group}>
+            <SettingRow label="Haptics">
+              <View style={styles.row}>
+                {([true, false] as const).map((value) => (
+                  <Pressable
+                    key={String(value)}
+                    style={[
+                      styles.tagPill,
+                      hapticsEnabled === value && styles.pillActive
+                    ]}
+                    onPress={() => setHapticsEnabled(value)}
+                  >
+                    <Text
+                      style={[
+                        styles.tagPillText,
+                        hapticsEnabled === value && styles.pillTextActive
+                      ]}
+                    >
+                      {value ? 'On' : 'Off'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </SettingRow>
           </View>
         </View>
 
